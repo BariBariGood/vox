@@ -141,25 +141,36 @@ export function CallHistory({ history }: CallHistoryProps) {
             {expandedCall === call.id && (
               <div className="mt-4 pt-4 border-t border-gray-100">
                 {call.call_summary && (
-                  <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                    <h4 className="text-sm font-medium text-blue-900 mb-1">Call Summary</h4>
-                    <p className="text-sm text-white/70 mt-1">{call.call_summary.replace('Call Summary: ', '')}</p>
+                  <div className="mb-4 p-3 bg-white/10 rounded-lg">
+                    <h4 className="text-sm font-medium text-white mb-1">Call Summary</h4>
+                    <p className="text-sm text-white/70 mt-1">{call.call_summary}</p>
                   </div>
                 )}
                 
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-white">{call.phone_number}</p>
-                  <div className="max-h-60 overflow-y-auto space-y-2">
-                    {call.transcript?.map((entry, index) => (
-                      <div key={index} className="text-sm">
-                        <div className="flex items-start space-x-2">
-                          <span className="text-xs text-gray-500 font-mono mt-0.5">
-                            {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                          </span>
-                          <span className="text-gray-900">{entry.message}</span>
+                  <h4 className="text-sm font-medium text-white mb-2">Transcript</h4>
+                  <div className="max-h-60 overflow-y-auto space-y-2 bg-black/20 rounded-lg p-3">
+                    {call.transcript && call.transcript.length > 0 ? (
+                      call.transcript.map((entry, index) => (
+                        <div key={index} className="text-sm">
+                          <div className="flex items-start space-x-2">
+                            <span className="text-xs text-white/40 font-mono mt-0.5 min-w-[80px]">
+                              {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                            </span>
+                            <span className={`font-medium min-w-[80px] ${
+                              entry.speaker === 'VOX' ? 'text-blue-400' :
+                              entry.speaker === 'Other Party' ? 'text-green-400' :
+                              'text-white/60'
+                            }`}>
+                              {entry.speaker}:
+                            </span>
+                            <span className="text-white/80 flex-1">{entry.message}</span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-white/40 text-sm italic">No transcript available</p>
+                    )}
                   </div>
                 </div>
               </div>

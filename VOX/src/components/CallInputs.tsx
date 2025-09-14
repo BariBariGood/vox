@@ -2,10 +2,11 @@ import { useState } from 'react'
 
 interface CallInputsProps {
   onStartCall: (phoneNumber: string, callGoal: string) => void
+  onEndCall?: () => void
   isCallActive?: boolean
 }
 
-export function CallInputs({ onStartCall, isCallActive = false }: CallInputsProps) {
+export function CallInputs({ onStartCall, onEndCall, isCallActive = false }: CallInputsProps) {
   const [phoneNumber, setPhoneNumber] = useState('')
   const [callGoal, setCallGoal] = useState('')
   const [phoneError, setPhoneError] = useState<string | null>(null)
@@ -76,11 +77,11 @@ export function CallInputs({ onStartCall, isCallActive = false }: CallInputsProp
   }
 
   return (
-    <div className="flex gap-4 items-center">
+    <div className="flex gap-6 items-center">
       {/* Phone Number Input */}
       <div className="relative flex-shrink-0">
         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-          <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="h-5 w-5 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
           </svg>
         </div>
@@ -91,10 +92,10 @@ export function CallInputs({ onStartCall, isCallActive = false }: CallInputsProp
           onChange={handlePhoneChange}
           disabled={isCallActive}
           placeholder="Enter a phone number"
-          className={`w-80 pl-12 pr-4 py-4 bg-gradient-to-br from-white/20 to-white/0 rounded-xl outline outline-1 outline-neutral-900 backdrop-blur-xl text-white placeholder-white/50 transition-colors ${
+          className={`w-80 pl-12 pr-4 py-4 text-white text-sm bg-black/30 border border-white/40 backdrop-blur-md rounded-full shadow-[inset_0_1px_0px_rgba(255,255,255,0.75),0_0_9px_rgba(0,0,0,0.2),0_3px_8px_rgba(0,0,0,0.15)] placeholder:text-white/70 focus:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all duration-300 ${
             phoneError 
-              ? 'border-red-400 bg-red-500/10' 
-              : 'hover:outline-white/30 focus:outline-blue-400'
+              ? 'border-red-400/50 bg-red-500/10 focus:ring-red-400/30' 
+              : 'hover:bg-white/10'
           } ${isCallActive ? 'opacity-50 cursor-not-allowed' : ''}`}
           maxLength={14}
         />
@@ -111,7 +112,7 @@ export function CallInputs({ onStartCall, isCallActive = false }: CallInputsProp
       {/* Call Goal Input */}
       <div className="relative flex-1">
         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-          <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="h-5 w-5 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
           </svg>
         </div>
@@ -122,10 +123,10 @@ export function CallInputs({ onStartCall, isCallActive = false }: CallInputsProp
           onChange={(e) => setCallGoal(e.target.value)}
           disabled={isCallActive}
           placeholder="Add what you want to complete here"
-          className={`w-full pl-12 pr-4 py-4 bg-gradient-to-br from-white/20 to-white/0 rounded-xl outline outline-1 outline-neutral-900 backdrop-blur-xl text-white placeholder-white/50 transition-colors ${
+          className={`w-full pl-12 pr-4 py-4 text-white text-sm bg-black/30 border border-white/40 backdrop-blur-md rounded-full shadow-[inset_0_1px_0px_rgba(255,255,255,0.75),0_0_9px_rgba(0,0,0,0.2),0_3px_8px_rgba(0,0,0,0.15)] placeholder:text-white/70 focus:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all duration-300 ${
             goalError 
-              ? 'border-red-400 bg-red-500/10' 
-              : 'hover:outline-white/30 focus:outline-blue-400'
+              ? 'border-red-400/50 bg-red-500/10 focus:ring-red-400/30' 
+              : 'hover:bg-white/10'
           } ${isCallActive ? 'opacity-50 cursor-not-allowed' : ''}`}
         />
         {goalError && (
@@ -138,23 +139,26 @@ export function CallInputs({ onStartCall, isCallActive = false }: CallInputsProp
         )}
       </div>
 
-      {/* Submit Button */}
+      {/* Submit/End Call Button */}
       <button
-        onClick={handleStartCall}
-        disabled={!isFormValid() && !isCallActive}
-        className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 ${
+        onClick={isCallActive ? onEndCall : handleStartCall}
+        disabled={!isCallActive && !isFormValid()}
+        className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-[inset_0_1px_0px_rgba(255,255,255,0.75),0_0_9px_rgba(0,0,0,0.2),0_3px_8px_rgba(0,0,0,0.15)] backdrop-blur-md ${
           isCallActive
-            ? 'bg-red-500/20 backdrop-blur-md border border-red-500/40 hover:bg-red-500/30 text-red-400'
+            ? 'bg-red-500/20 border border-red-500/50 hover:bg-red-500/30 text-red-400 shadow-[inset_0_1px_0px_rgba(255,0,0,0.75),0_0_9px_rgba(255,0,0,0.2),0_3px_8px_rgba(255,0,0,0.15)]'
             : isFormValid()
-            ? 'bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 text-white'
-            : 'bg-white/5 border border-white/10 text-white/30 cursor-not-allowed'
+            ? 'bg-black/20 border border-white/50 hover:bg-white/15 text-white'
+            : 'bg-black/10 border border-white/20 text-white/30 cursor-not-allowed'
         }`}
+        title={isCallActive ? 'End Call' : 'Start Call'}
       >
         {isCallActive ? (
-          <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+          // End call icon (phone with slash)
+          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M5 3a2 2 0 00-2 2v3.28a1 1 0 00.684.948l1.498.493a1 1 0 011.21-.502l2.257 1.13a11.042 11.042 0 015.516 5.516l1.13 2.257a1 1 0 01-.502 1.21l.493 1.498a1 1 0 00.948.684H19a2 2 0 002-2v-1c0-9.389-7.611-17-17-17z" />
           </svg>
         ) : (
+          // Start call icon (arrow up)
           <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
           </svg>
