@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { LoginPage } from './components/LoginPage'
 import { Dashboard } from './components/Dashboard'
+import { AccountPage } from './components/AccountPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -42,6 +43,11 @@ function AppRoutes() {
       <Route path="/dashboard" element={
         <ProtectedRoute>
           <Dashboard />
+        </ProtectedRoute>
+      } />
+      <Route path="/account" element={
+        <ProtectedRoute>
+          <AccountPage />
         </ProtectedRoute>
       } />
       <Route path="/" element={<Navigate to="/dashboard" />} />

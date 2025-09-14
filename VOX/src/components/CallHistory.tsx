@@ -1,0 +1,136 @@
+import { useState } from 'react'
+
+interface CallRecord {
+  id: number
+  phone_number: string
+  call_goal: string
+  call_status: string
+  transcript: Array<{
+    timestamp: Date
+    message: string
+  }>
+  call_summary?: string
+  call_result: string
+  created_at: string
+}
+
+interface CallHistoryProps {
+  history: CallRecord[]
+}
+
+export function CallHistory({ history }: CallHistoryProps) {
+  const [expandedCall, setExpandedCall] = useState<number | null>(null)
+
+  if (history.length === 0) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Call History</h3>
+        <div className="text-center py-8">
+          <div className="text-gray-400 mb-2">
+            <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+            </svg>
+          </div>
+          <p className="text-gray-500 text-sm">No calls made yet</p>
+        </div>
+      </div>
+    )
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
+
+  const getStatusColor = (result: string) => {
+    return result === 'auto_complete' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className="px-6 py-4 border-b border-gray-200">
+        <h3 className="text-lg font-medium text-gray-900">Call History</h3>
+        <p className="text-sm text-gray-500">Recent calls made with VOX ({history.length} total)</p>
+      </div>
+      
+      <div className="divide-y divide-gray-200 max-h-96 overflow-y-auto">
+        {history.map((call) => (
+          <div key={call.id} className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <div className="flex items-center space-x-3">
+                  <div className="flex-shrink-0">
+                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {call.phone_number}
+                    </p>
+                    <p className="text-sm text-gray-500 truncate">
+                      {call.call_goal}
+                    </p>
+                  </div>
+                  <div className="flex-shrink-0">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(call.call_result)}`}>
+                      {call.call_result === 'auto_complete' ? 'Auto-Completed' : 'Bridged'}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center text-xs text-gray-500">
+                  <time>{formatDate(call.created_at)}</time>
+                  {call.transcript && (
+                    <span className="ml-2">• {call.transcript.length} messages</span>
+                  )}
+                </div>
+              </div>
+              <div className="ml-4">
+                <button
+                  onClick={() => setExpandedCall(expandedCall === call.id ? null : call.id)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg 
+                    className={`h-5 w-5 transform transition-transform ${expandedCall === call.id ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Expanded transcript */}
+            {expandedCall === call.id && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                {call.call_summary && (
+                  <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                    <h4 className="text-sm font-medium text-blue-900 mb-1">Call Summary</h4>
+                    <p className="text-sm text-blue-800">{call.call_summary.replace('Call Summary: ', '')}</p>
+                  </div>
+                )}
+                
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-gray-900">Transcript</h4>
+                  <div className="max-h-60 overflow-y-auto space-y-2">
+                    {call.transcript?.map((entry, index) => (
+                      <div key={index} className="text-sm">
+                        <div className="flex items-start space-x-2">
+                          <span className="text-xs text-gray-500 font-mono mt-0.5">
+                            {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                          </span>
+                          <span className="text-gray-900">{entry.message}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+

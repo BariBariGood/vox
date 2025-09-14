@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { CallInputs } from './CallInputs'
 import { StatusBadge } from './StatusBadge'
 import { LiveStream } from './LiveStream'
+import { CallHistory } from './CallHistory'
 import type { StreamEvent } from './LiveStream'
 import { vapiService, type VAPICallEvent } from '../services/vapiService'
+import { supabase } from '../lib/supabase'
 
 type CallStatus = 'idle' | 'dialing' | 'mapping' | 'bridged' | 'ended' | 'failed'
 
@@ -21,6 +24,7 @@ export function Dashboard() {
     type: 'auto_complete' | 'bridged'
     data?: any
   } | null>(null)
+  const [callHistory, setCallHistory] = useState<any[]>([])
 
   // Convert VAPI events to StreamEvents
   const convertVAPIEventToStreamEvent = (vapiEvent: VAPICallEvent): StreamEvent => {
@@ -49,11 +53,13 @@ export function Dashboard() {
           message: 'Listening for response...'
         }
       case 'transcript':
-        const isAssistant = vapiEvent.data?.role === 'assistant'
+        const speaker = vapiEvent.data?.speaker || (vapiEvent.data?.role === 'assistant' ? 'VOX' : 'Other Party')
+        const content = vapiEvent.data?.content || vapiEvent.data?.text || 'Audio detected'
+        
         return {
           ...baseEvent,
-          type: isAssistant ? 'action' : 'menu',
-          message: `${isAssistant ? 'VOX: ' : 'System: '}${vapiEvent.data?.content || vapiEvent.data?.text || 'Audio detected'}`
+          type: vapiEvent.data?.role === 'assistant' ? 'action' : 'menu',
+          message: `${speaker}: ${content}`
         }
       case 'tool-call':
         if (vapiEvent.data?.function?.name === 'gatherInformation') {
@@ -86,6 +92,12 @@ export function Dashboard() {
           type: 'complete',
           message: 'Call completed successfully'
         }
+      case 'call-status':
+        return {
+          ...baseEvent,
+          type: 'system',
+          message: `Call status: ${vapiEvent.data?.status}`
+        }
       case 'error':
         return {
           ...baseEvent,
@@ -101,14 +113,147 @@ export function Dashboard() {
     }
   }
 
+  // Save completed call to database
+  const saveCallToDatabase = async () => {
+    if (!currentCall || !user) return
+
+    try {
+      // Extract full transcript from stream events
+      // Include all transcript-type messages (action, menu, info, etc.)
+      const transcript = streamEvents.filter(event =>
+        event.type === 'action' ||
+        event.type === 'menu' ||
+        event.type === 'info' ||
+        (event.type === 'system' && event.message.includes('Call Summary:'))
+      ).map(event => ({
+        timestamp: event.timestamp.toISOString(),
+        speaker: event.message.startsWith('VOX:') ? 'VOX' :
+                 event.message.startsWith('Other Party:') ? 'Other Party' :
+                 'System',
+        message: event.message
+      }))
+
+      // Extract call summary if available
+      const summaryEvent = streamEvents.find(event =>
+        event.message.includes('Call Summary:')
+      )
+      const callSummary = summaryEvent
+        ? summaryEvent.message.replace('Call Summary: ', '')
+        : null
+
+      const callRecord = {
+        user_id: user.id,
+        phone_number: currentCall.phoneNumber,
+        call_goal: currentCall.goal,
+        vapi_call_id: currentCall.vapiCallId || null,
+        call_status: 'completed',
+        transcript: transcript.length > 0 ? transcript : null,
+        call_summary: callSummary,
+        call_result: callResult?.type || 'auto_complete'
+      }
+
+        console.log('💾 Saving call to database:', callRecord)
+        console.log('📝 Transcript length:', transcript.length)
+        console.log('👤 User ID:', user.id)
+        console.log('🔐 User object:', user)
+        
+        // Check current auth session
+        const { data: session } = await supabase.auth.getSession()
+        console.log('🔑 Current session:', session)
+        console.log('🔑 Session user:', session.session?.user)
+
+        // Save to Supabase
+        const { data, error } = await supabase
+          .from('call_history')
+          .insert([callRecord])
+          .select()
+
+        if (error) {
+          console.error('❌ Failed to save call:', error)
+          console.error('Error details:', error.message, error.details)
+          console.error('Error hint:', error.hint)
+        } else {
+          console.log('✅ Call saved successfully:', data)
+          console.log('✅ Saved data details:', JSON.stringify(data, null, 2))
+          
+          // Verify the record was actually saved by checking the table
+          const { data: checkData, error: checkError } = await supabase
+            .from('call_history')
+            .select('*')
+            .eq('id', data[0]?.id)
+          
+          if (checkError) {
+            console.error('❌ Error checking saved record:', checkError)
+          } else {
+            console.log('✅ Verification - Record exists:', checkData)
+          }
+          
+          // Reload call history
+          loadCallHistory()
+        }
+    } catch (error) {
+      console.error('❌ Error saving call:', error)
+    }
+  }
+  
+  // Load call history from database
+  const loadCallHistory = async () => {
+    if (!user) {
+      console.log('⚠️ No user found, cannot load call history')
+      return
+    }
+    
+    try {
+      console.log('📊 Loading call history for user:', user.id)
+      
+      // First, try to get ALL records (ignoring user_id for debugging)
+      const { data: allData, error: allError } = await supabase
+        .from('call_history')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50)
+      
+      console.log('📊 All records in table:', allData?.length || 0)
+      if (allData && allData.length > 0) {
+        console.log('📊 Sample record:', allData[0])
+      }
+      
+      // Then try to get records for this specific user
+      const { data, error } = await supabase
+        .from('call_history')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50)
+      
+      if (error) {
+        console.error('❌ Failed to load call history:', error)
+        console.error('Error details:', error.message)
+      } else {
+        console.log('✅ Loaded call history for user:', data?.length || 0, 'calls')
+        if (data && data.length > 0) {
+          console.log('✅ First record:', data[0])
+        }
+        setCallHistory(data || [])
+      }
+    } catch (error) {
+      console.error('❌ Error loading call history:', error)
+    }
+  }
+  
+  // Load call history on component mount
+  useEffect(() => {
+    loadCallHistory()
+  }, [user])
+
   const handleStartCall = async (phoneNumber: string, callGoal: string) => {
     console.log('Starting VAPI call:', { phoneNumber, callGoal })
     
     try {
-      // Store call data and reset state
-      setCurrentCall({ phoneNumber, goal: callGoal })
+      // Clear previous call data when starting new call
       setStreamEvents([])
       setCallResult(null)
+      setCurrentCall({ phoneNumber, goal: callGoal })
       setCallStatus('dialing')
 
       // Add initial event
@@ -152,22 +297,24 @@ export function Dashboard() {
               type: 'auto_complete',
               data: vapiEvent.data.function.arguments
             })
-            // Auto-reset after showing result
-            setTimeout(() => {
-              setCallStatus('idle')
-              setCurrentCall(null)
-              setTimeout(() => setStreamEvents([]), 3000)
-            }, 8000)
+            // Don't auto-reset - wait for call-ended event
           } else if (vapiEvent.data?.function?.name === 'transferCall') {
             setCallStatus('bridged')
             setCallResult({ type: 'bridged' })
           }
         } else if (vapiEvent.type === 'call-ended') {
           setCallStatus('ended')
+
+          // Save call to database after a short delay to ensure all transcript events are processed
+          setTimeout(() => {
+            console.log('📞 Call ended, saving to database...')
+            saveCallToDatabase()
+          }, 1500) // Give a bit more time for all events to process
+
+          // Keep call data visible for review
           setTimeout(() => {
             setCallStatus('idle')
-            setCurrentCall(null)
-            setTimeout(() => setStreamEvents([]), 3000)
+            // Keep currentCall and streamEvents for history viewing
           }, 5000)
         } else if (vapiEvent.type === 'error') {
           setCallStatus('failed')
@@ -236,6 +383,15 @@ export function Dashboard() {
               <span className="text-sm text-gray-600">
                 Welcome, {user?.email}
               </span>
+              <Link
+                to="/account"
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Account Settings"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </Link>
               <button
                 onClick={signOut}
                 className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
@@ -312,14 +468,41 @@ export function Dashboard() {
                       <button
                         onClick={async () => {
                           try {
-                            await vapiService.endCall(currentCall.vapiCallId!)
+                            // Add immediate feedback
+                            setStreamEvents(prev => [...prev, {
+                              id: `end-call-${Date.now()}`,
+                              timestamp: new Date(),
+                              type: 'system',
+                              message: 'Ending call...'
+                            }])
+                            
+                            console.log('Ending VAPI call:', currentCall.vapiCallId)
+                            const result = await vapiService.endCall(currentCall.vapiCallId!)
+                            console.log('End call result:', result)
+                            
+                            // Add success feedback
+                            setStreamEvents(prev => [...prev, {
+                              id: `call-ended-${Date.now()}`,
+                              timestamp: new Date(),
+                              type: 'complete',
+                              message: 'Call ended successfully by user'
+                            }])
+                            
                             setCallStatus('ended')
                             setTimeout(() => {
                               setCallStatus('idle')
                               setCurrentCall(null)
+                              setTimeout(() => setStreamEvents([]), 3000) // Clear events after showing result
                             }, 2000)
                           } catch (error) {
                             console.error('Error ending call:', error)
+                            // Add error feedback
+                            setStreamEvents(prev => [...prev, {
+                              id: `end-call-error-${Date.now()}`,
+                              timestamp: new Date(),
+                              type: 'error',
+                              message: `Failed to end call: ${error.message}`
+                            }])
                           }
                         }}
                         className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
@@ -429,6 +612,11 @@ export function Dashboard() {
                 Learned IVR paths and successful navigation strategies for faster future calls.
               </p>
             </div>
+          </div>
+          
+          {/* Call History Section */}
+          <div className="mt-8">
+            <CallHistory history={callHistory} />
           </div>
         </div>
       </main>

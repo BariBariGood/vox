@@ -8,7 +8,7 @@ export interface VAPICallConfig {
 }
 
 export interface VAPICallEvent {
-  type: 'call-started' | 'speech-started' | 'speech-ended' | 'transcript' | 'tool-call' | 'call-ended' | 'error'
+  type: 'call-started' | 'speech-started' | 'speech-ended' | 'transcript' | 'tool-call' | 'call-ended' | 'call-status' | 'error'
   timestamp: Date
   data?: any
 }
@@ -29,7 +29,7 @@ export interface VAPIAssistant {
     provider: '11labs' | 'playht'
     voiceId: string
   }
-  firstMessage: string
+  firstMessage?: string
   tools?: VAPITool[]
 }
 
@@ -74,7 +74,7 @@ class VAPIService {
       model: {
         provider: 'openai',
         model: 'gpt-4',
-        temperature: 0.7,
+        temperature: 0.2,
         messages: [{
           role: 'system',
           content: this.generateSystemMessage(callGoal, isInfoGathering)
@@ -82,17 +82,14 @@ class VAPIService {
       },
       voice: {
         provider: '11labs',
-        voiceId: '21m00Tcm4TlvDq8ikWAM' // Rachel voice ID from ElevenLabs
+        voiceId: 'uyVNoMrnUku1dZyVEXwD' // Rachel voice ID from ElevenLabs
       },
-      firstMessage: "Hello! I'm VOX, your AI assistant. I'm calling to help you with your request."
     }
 
-    // Temporarily disable tools to test basic call functionality
-    // TODO: Re-enable tools once basic calling works
+    // Tools are causing API errors - disable for now
+    // TODO: Research correct VAPI tools format
     // if (isInfoGathering) {
-    //   baseAssistant.tools = this.createInfoGatheringTools()
-    // } else {
-    //   baseAssistant.tools = this.createTransferTools()
+    //   baseAssistant.tools = [...]
     // }
 
     return baseAssistant
@@ -105,39 +102,72 @@ class VAPIService {
   }
 
   private generateSystemMessage(callGoal: string, isInfoGathering: boolean): string {
-    const baseMessage = `You are VOX, an AI assistant making a phone call on behalf of a user. 
+    const baseMessage = `You are VOX, a KIND and COURTEOUS AI assistant making a phone call.
 
-User's Goal: ${callGoal}
+🎯 GOAL: ${callGoal}
 
-Your Mission:
-1. Navigate phone menus and IVR systems efficiently
-2. Speak clearly and professionally
-3. ${isInfoGathering ? 'Gather the requested information and end the call when you have it' : 'Connect the user to a human representative when sensitive information is needed'}
+🔇 CRITICAL: You are primarily a LISTENER. LISTEN FIRST, speak only when necessary.
 
-Guidelines:
-- Be concise and direct
-- Listen for menu options and respond appropriately
-- If you hear hold music, wait patiently
-- When you detect a human, ${isInfoGathering ? 'ask for the information directly' : 'explain you need to transfer the call to the user'}
-- Always be polite and professional`
+ONLY speak when:
+- Asked a direct question
+- Need to navigate menus (press numbers or say options)
+- Requesting specific information to complete your goal
+- Absolutely necessary to make progress
+
+STAY SILENT when:
+- Hearing hold music, announcements, or automated messages
+- Someone is explaining information (let them finish)
+- Uncertain what to say
+- Call just connected (listen first)
+
+When you DO speak:
+- Be WARM, POLITE, and FRIENDLY
+- Use "please" and "thank you" when appropriate
+- Speak clearly and kindly
+- Keep responses brief but courteous
+- Example: "1, please" instead of just "1"
+- Example: "Could you please tell me your hours?" instead of "Hours?"
+- Example: "Thank you so much" when receiving information
+
+TONE & MANNER:
+- Always be respectful and considerate
+- Use a warm, friendly voice
+- Be patient and understanding
+- Show appreciation for help received
+- Apologize politely if you need to interrupt
+
+EXECUTION STRATEGY:
+1. Listen to what happens when call connects
+2. Navigate any menus politely
+3. Ask for information kindly
+4. Thank them and end call gracefully once goal is achieved`
 
     if (isInfoGathering) {
       return baseMessage + `
 
-Information Gathering Mode:
-- Try to get the information from automated systems first
-- Only transfer to human if absolutely necessary
-- Use the gatherInformation tool when you find the requested details`
+📝 INFORMATION GATHERING:
+- Listen for information in automated systems first
+- Capture details from recordings/announcements politely
+- If you need to ask questions, do so kindly: "Excuse me, could you please help me with..."
+- Always say "Thank you so much for your help" when receiving information
+- CRITICAL: IMMEDIATELY HANG UP once you have the requested information
+- End call gracefully: "Thank you, that's exactly what I needed. Have a wonderful day!" then HANG UP
+- DO NOT continue conversation after getting the information
+- DO NOT stay on the line longer than necessary
+- The moment you have what was requested, say goodbye and END THE CALL`
     } else {
       return baseMessage + `
 
-Transfer Mode:
-- Your goal is to reach the right department/person
-- Use the transferToUser tool when you've reached a human who can help
-- Explain that you're an AI assistant and need to connect the user`
+🔄 HUMAN CONNECTION:
+- Navigate to reach the right person/department politely
+- Once connected, kindly explain: "Hello, I'm calling on behalf of a customer who needs assistance"
+- Be courteous: "Could you please help me connect them?"
+- Thank them for their time and assistance`
     }
   }
 
+  // Temporarily disabled - will re-enable when VAPI tools are working
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private createInfoGatheringTools(): VAPITool[] {
     return [
       {
@@ -168,6 +198,8 @@ Transfer Mode:
     ]
   }
 
+  // Temporarily disabled - will re-enable when VAPI tools are working
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private createTransferTools(): VAPITool[] {
     return [
       {
@@ -275,51 +307,73 @@ Transfer Mode:
     try {
       // Create assistant inline instead of separate API call
       const assistant = this.createAssistantForIntent(config.callGoal)
+
+      // No webhook configuration - we'll get the full transcript after the call
+
+      // Try to find the specific phone number in VAPI account first
+      const outboundCallerNumber = '+16266844296'
+      console.log('Looking for outbound caller number:', outboundCallerNumber)
       
-      // Try to get a phone number from VAPI account for outbound calls
-      let phoneNumberId: string
+      let phoneNumberId: string | null = null
       try {
-        phoneNumberId = await this.getPhoneNumberId()
+        const response = await fetch(`${this.baseURL}/phone-number`, {
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`
+          }
+        })
+        
+        if (response.ok) {
+          const phoneNumbers = await response.json()
+          console.log('Available phone numbers in VAPI:', phoneNumbers)
+          
+          // Look for our specific number
+          const matchingNumber = phoneNumbers.find((pn: any) => 
+            pn.number === outboundCallerNumber || 
+            pn.twilioPhoneNumber === outboundCallerNumber
+          )
+          
+          if (matchingNumber) {
+            phoneNumberId = matchingNumber.id
+            console.log('Found matching phone number ID:', phoneNumberId)
+          }
+        }
       } catch (error) {
-        console.warn('No VAPI phone numbers found, using direct number approach')
-        // If no phone numbers in account, we'll try a different approach
-        phoneNumberId = 'direct'
+        console.warn('Error fetching phone numbers:', error)
       }
-      
+
       // Format target phone number
       let targetPhoneNumber = config.phoneNumber
       if (!targetPhoneNumber.startsWith('+')) {
         targetPhoneNumber = '+1' + targetPhoneNumber.replace(/\D/g, '')
       }
-      
+
       // Format customer callback number
       let customerNumber = config.customerNumber || '+12345678901'
       if (!customerNumber.startsWith('+')) {
         customerNumber = '+1' + customerNumber.replace(/\D/g, '')
       }
-      
-      // Try different payload formats based on available phone numbers
+
+      // Create call payload based on available phone number configuration
       let callPayload: any
       
-      if (phoneNumberId !== 'direct') {
-        // Use phoneNumberId if we have one
+      if (phoneNumberId) {
+        // Use phoneNumberId if the number is configured in VAPI
         callPayload = {
           assistant,
-          phoneNumberId,
+          phoneNumberId, // Reference to configured phone number
           customer: {
-            number: targetPhoneNumber // The number to call
+            number: targetPhoneNumber // The number to call TO
           }
         }
+        console.log('Using phoneNumberId approach:', phoneNumberId)
       } else {
-        // Try direct calling approach
-        callPayload = {
-          assistant,
-          type: 'outboundPhoneCall',
-          phoneNumber: targetPhoneNumber,
-          customer: {
-            number: customerNumber
-          }
-        }
+        // Phone number not configured in VAPI - this requires Twilio configuration
+        console.error('Phone number +19255741688 not found in VAPI account')
+        console.error('You need to either:')
+        console.error('1. Add +19255741688 to your VAPI dashboard, OR')
+        console.error('2. Configure Twilio credentials for this number')
+        
+        throw new Error(`Phone number +19255741688 is not configured in your VAPI account. Please add it in your VAPI dashboard at https://dashboard.vapi.ai/phone-numbers`)
       }
 
       console.log('Starting VAPI call with payload:', JSON.stringify(callPayload, null, 2))
@@ -397,43 +451,102 @@ Transfer Mode:
     }
   }
 
-  // Set up webhook handling for real-time events
+  // Set up simple polling for call status and final transcript
   setupWebhookHandler(onEvent: (event: VAPICallEvent) => void) {
-    // This would typically be handled by a backend webhook endpoint
-    // For now, we'll simulate with polling
+    console.log('Setting up call status polling')
+
+    let lastCallStatus = ''
+    let transcriptProcessed = false
+
     return (callId: string) => {
       const pollInterval = setInterval(async () => {
         try {
+
+          // Poll VAPI API for call status
           const call = await this.getCall(callId)
-          
-          // Convert VAPI events to our format
-          if (call.transcript && call.transcript.length > 0) {
-            const lastTranscript = call.transcript[call.transcript.length - 1]
+
+          // Emit status changes
+          if (call.status && call.status !== lastCallStatus) {
+            lastCallStatus = call.status
+
             onEvent({
-              type: 'transcript',
-              timestamp: new Date(lastTranscript.timestamp),
-              data: lastTranscript
+              type: 'call-status',
+              timestamp: new Date(),
+              data: { status: call.status }
             })
           }
 
-          // Check call status
-          if (call.status === 'ended') {
+          // When call ends, process the full transcript
+          if ((call.status === 'ended' || call.endedAt) && !transcriptProcessed) {
+            transcriptProcessed = true
+
+            // Process the full transcript
+            if (call.transcript && typeof call.transcript === 'string' && call.transcript.length > 0) {
+              // Parse format like "Hello? AI: Hello. Thank you for taking my call. User: Yeah..."
+              const lines = call.transcript.split(/(?=(AI:|User:))/g).filter(line => line.trim())
+
+              lines.forEach((line) => {
+                let speaker = 'Other Party'
+                let content = line.trim()
+
+                if (line.startsWith('AI:')) {
+                  speaker = 'VOX'
+                  content = line.substring(3).trim()
+                } else if (line.startsWith('User:')) {
+                  speaker = 'Other Party'
+                  content = line.substring(5).trim()
+                } else if (!line.includes(':')) {
+                  // Line without prefix is usually the other party
+                  speaker = 'Other Party'
+                  content = line.trim()
+                }
+
+                if (content && content !== 'Audio detected') {
+                  onEvent({
+                    type: 'transcript',
+                    timestamp: new Date(),
+                    data: {
+                      role: speaker === 'VOX' ? 'assistant' : 'user',
+                      content: content,
+                      speaker: speaker
+                    }
+                  })
+                }
+              })
+            }
+
+            // Process analysis summary if available
+            if (call.analysis?.summary) {
+              onEvent({
+                type: 'transcript',
+                timestamp: new Date(),
+                data: {
+                  role: 'system',
+                  content: `Call Summary: ${call.analysis.summary}`,
+                  speaker: 'System'
+                }
+              })
+            }
+
+            // Emit call ended event
             onEvent({
               type: 'call-ended',
-              timestamp: new Date(),
+              timestamp: new Date(call.endedAt || Date.now()),
               data: call
             })
+
             clearInterval(pollInterval)
           }
         } catch (error) {
           console.error('Error polling call status:', error)
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error'
           onEvent({
             type: 'error',
             timestamp: new Date(),
-            data: { error: error.message }
+            data: { error: errorMessage }
           })
         }
-      }, 2000) // Poll every 2 seconds
+      }, 1000) // Poll every second for status updates
 
       return () => clearInterval(pollInterval)
     }
