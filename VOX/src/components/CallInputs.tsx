@@ -92,7 +92,7 @@ export function CallInputs({ onStartCall, onEndCall, isCallActive = false }: Cal
           onChange={handlePhoneChange}
           disabled={isCallActive}
           placeholder="Enter a phone number"
-          className={`w-80 pl-12 pr-4 py-4 text-white text-sm bg-black/30 border border-white/40 backdrop-blur-md rounded-full shadow-[inset_0_1px_0px_rgba(255,255,255,0.75),0_0_9px_rgba(0,0,0,0.2),0_3px_8px_rgba(0,0,0,0.15)] placeholder:text-white/70 focus:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all duration-300 ${
+          className={`w-80 pl-12 pr-4 py-4 text-white bg-gradient-to-br from-white/20 to-white/0 rounded-xl outline outline-1 outline-neutral-900 backdrop-blur-xl placeholder:text-white/50 hover:outline-white/30 focus:outline-blue-400 transition-colors ${
             phoneError 
               ? 'border-red-400/50 bg-red-500/10 focus:ring-red-400/30' 
               : 'hover:bg-white/10'
@@ -123,7 +123,7 @@ export function CallInputs({ onStartCall, onEndCall, isCallActive = false }: Cal
           onChange={(e) => setCallGoal(e.target.value)}
           disabled={isCallActive}
           placeholder="Add what you want to complete here"
-          className={`w-full pl-12 pr-4 py-4 text-white text-sm bg-black/30 border border-white/40 backdrop-blur-md rounded-full shadow-[inset_0_1px_0px_rgba(255,255,255,0.75),0_0_9px_rgba(0,0,0,0.2),0_3px_8px_rgba(0,0,0,0.15)] placeholder:text-white/70 focus:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all duration-300 ${
+          className={`w-full pl-12 pr-4 py-4 text-white bg-gradient-to-br from-white/20 to-white/0 rounded-xl outline outline-1 outline-neutral-900 backdrop-blur-xl placeholder:text-white/50 hover:outline-white/30 focus:outline-blue-400 transition-colors ${
             goalError 
               ? 'border-red-400/50 bg-red-500/10 focus:ring-red-400/30' 
               : 'hover:bg-white/10'
@@ -143,12 +143,12 @@ export function CallInputs({ onStartCall, onEndCall, isCallActive = false }: Cal
       <button
         onClick={isCallActive ? onEndCall : handleStartCall}
         disabled={!isCallActive && !isFormValid()}
-        className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-[inset_0_1px_0px_rgba(255,255,255,0.75),0_0_9px_rgba(0,0,0,0.2),0_3px_8px_rgba(0,0,0,0.15)] backdrop-blur-md ${
+        className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 bg-gradient-to-br from-white/20 to-white/0 outline outline-1 outline-neutral-900 backdrop-blur-xl ${
           isCallActive
-            ? 'bg-red-500/20 border border-red-500/50 hover:bg-red-500/30 text-red-400 shadow-[inset_0_1px_0px_rgba(255,0,0,0.75),0_0_9px_rgba(255,0,0,0.2),0_3px_8px_rgba(255,0,0,0.15)]'
+            ? 'bg-gradient-to-br from-red-500/20 to-red-500/0 outline-red-500/50 hover:outline-red-500/70 text-red-400'
             : isFormValid()
-            ? 'bg-black/20 border border-white/50 hover:bg-white/15 text-white'
-            : 'bg-black/10 border border-white/20 text-white/30 cursor-not-allowed'
+            ? 'hover:outline-white/30 text-white'
+            : 'outline-white/20 text-white/30 cursor-not-allowed'
         }`}
         title={isCallActive ? 'End Call' : 'Start Call'}
       >

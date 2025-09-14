@@ -20,6 +20,7 @@ type CallStatus = 'idle' | 'dialing' | 'mapping' | 'bridged' | 'ended' | 'failed
 export function Dashboard() {
   const { user, signOut } = useAuth()
   const [callStatus, setCallStatus] = useState<CallStatus>('idle')
+  const [userProfile, setUserProfile] = useState<{profile_picture_url?: string} | null>(null)
   const [currentCall, setCurrentCall] = useState<{
     phoneNumber: string
     goal: string
@@ -32,10 +33,6 @@ export function Dashboard() {
   } | null>(null)
   const [streamEvents, setStreamEvents] = useState<StreamEvent[]>([])
   const streamEventsRef = useRef<StreamEvent[]>([])
-  const [callResult, setCallResult] = useState<{
-    type: 'auto_complete' | 'bridged'
-    data?: any
-  } | null>(null)
   const callResultRef = useRef<{ type: 'auto_complete' | 'bridged'; data?: any } | null>(null)
   const [callHistory, setCallHistory] = useState<any[]>([])
   const [selectedCallId, setSelectedCallId] = useState<number | null>(null)
@@ -365,7 +362,7 @@ export function Dashboard() {
       console.log('📊 Loading call history for user:', user.id)
       
       // First, try to get ALL records (ignoring user_id for debugging)
-      const { data: allData, error: allError } = await supabase
+      const { data: allData } = await supabase
         .from('call_history')
         .select('*')
         .order('created_at', { ascending: false })
@@ -399,9 +396,31 @@ export function Dashboard() {
     }
   }
   
-  // Load call history on component mount
+  // Load user profile
+  const loadUserProfile = async () => {
+    if (!user) return
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('profile_picture_url')
+        .eq('id', user.id)
+        .single()
+      
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+        console.error('Error loading user profile:', error)
+      } else if (data) {
+        setUserProfile(data)
+      }
+    } catch (error) {
+      console.error('Error loading user profile:', error)
+    }
+  }
+
+  // Load call history and user profile on component mount
   useEffect(() => {
     loadCallHistory()
+    loadUserProfile()
   }, [user])
 
   // Delete call from database
@@ -509,7 +528,6 @@ export function Dashboard() {
       // Clear previous call data when starting new call
       setStreamEvents([])
       streamEventsRef.current = [] // Clear ref too
-      setCallResult(null)
       callResultRef.current = null // Clear ref too
       currentCallRef.current = null // Clear call ref too
       const newCall = { phoneNumber, goal: callGoal }
@@ -567,13 +585,11 @@ export function Dashboard() {
               type: 'auto_complete' as const,
               data: vapiEvent.data.function.arguments
             }
-            setCallResult(result)
             callResultRef.current = result
             // Don't auto-reset - wait for call-ended event
           } else if (vapiEvent.data?.function?.name === 'transferCall') {
             setCallStatus('bridged')
             const result = { type: 'bridged' as const }
-            setCallResult(result)
             callResultRef.current = result
           }
         } else if (vapiEvent.type === 'call-ended') {
@@ -657,11 +673,11 @@ export function Dashboard() {
 
   return (
     <div className="min-h-screen relative bg-gray-950 overflow-hidden">
-      {/* Background Blur Effect */}
-      <div className="w-[749.23px] h-[749.23px] left-[345.39px] top-[137.39px] absolute bg-gradient-to-b from-blue-800/50 to-indigo-100/50 rounded-full border-[20px] border-indigo-100 blur-[125px]" />
+      {/* Dynamic Background Blur Effect - Bottom positioned in main content area */}
+      <div className="w-[1000px] h-[1000px] absolute bottom-0 left-[calc(50%+128px)] transform -translate-x-1/2 translate-y-1/2 bg-gradient-to-t from-blue-900/80 via-blue-700/60 to-cyan-600/40 rounded-full blur-[200px]" />
       
       {/* Sidebar Navigation */}
-      <nav className="fixed left-0 top-0 h-full w-80 bg-slate-800/50 backdrop-blur-sm border-r border-slate-700/50 flex flex-col z-10">
+      <nav className="fixed left-0 top-0 h-full w-64 bg-slate-800/50 backdrop-blur-sm border-r border-slate-700/50 flex flex-col z-10">
         <div className="p-4 border-b border-slate-700/50">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
@@ -773,9 +789,15 @@ export function Dashboard() {
               className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors flex-1 flex justify-center"
               title="Account Settings"
             >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
+              <img
+                src={userProfile?.profile_picture_url || '/src/assets/blank-profile.webp'}
+                alt="Profile"
+                className="h-5 w-5 rounded-full object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = '/src/assets/blank-profile.webp';
+                }}
+              />
             </Link>
             <button
               onClick={signOut}
@@ -788,7 +810,7 @@ export function Dashboard() {
       </nav>
 
       {/* Main Content */}
-      <main className="ml-80 overflow-auto relative z-10 flex flex-col min-h-screen">
+      <main className="ml-64 overflow-auto relative z-10 flex flex-col min-h-screen">
         {currentCall && callStatus !== 'idle' ? (
           // Live Call View
           <div className="flex-1 flex flex-col">
@@ -897,7 +919,7 @@ export function Dashboard() {
 
                       {/* Transcript Messages */}
                       {selectedCall.transcript && selectedCall.transcript.length > 0 ? (
-                        selectedCall.transcript.map((entry, index) => {
+                        selectedCall.transcript.map((entry: any, index: number) => {
                           const isVOX = entry.speaker === 'VOX'
                           const isSystem = entry.speaker === 'System'
 
@@ -937,59 +959,64 @@ export function Dashboard() {
             })()}
           </div>
         ) : (
-          // Default View - Feature Cards
-          <div className="flex-1 flex flex-col items-center justify-center py-16">
-            <div className="max-w-4xl mx-auto px-8 text-center">
-              {/* Header Text */}
-              <div className="self-stretch text-center justify-start text-white text-3xl font-medium font-['DM_Sans'] leading-9 mb-9">Hi, {user?.email?.split('@')[0]}. How can I save your time?</div>
-            
-            <div className="self-stretch inline-flex justify-start items-center gap-12">
-            {/* Hotel Check-in Card */}
-            <div className="w-60 h-40 relative bg-gradient-to-br from-white/20 to-white/0 rounded-xl outline outline-1 outline-neutral-900 backdrop-blur-xl overflow-hidden">
-              <div className="w-52 left-[16px] top-[30px] absolute inline-flex flex-col justify-start items-start gap-3">
-                <div className="w-10 h-10 relative overflow-hidden">
-                  <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
+          // Default View - Feature Cards and Bottom Input
+          <div className="flex-1 flex flex-col">
+            {/* Top Section - Header and Feature Cards */}
+            <div className="flex-1 flex flex-col items-center justify-center py-16">
+              <div className="max-w-4xl mx-auto px-8 text-center">
+                {/* Header Text */}
+                <div className="self-stretch text-center justify-start text-white text-3xl font-medium font-['DM_Sans'] leading-9 mb-9">Hi, {user?.email?.split('@')[0]}. How can I save your time?</div>
+              
+                <div className="self-stretch inline-flex justify-start items-center gap-12">
+                  {/* Hotel Check-in Card */}
+                  <div className="w-60 h-40 relative bg-black/30 border border-white/40 backdrop-blur-md rounded-2xl shadow-[inset_0_1px_0px_rgba(255,255,255,0.75),0_0_9px_rgba(0,0,0,0.2),0_3px_8px_rgba(0,0,0,0.15)] hover:bg-white/15 transition-all duration-300 overflow-hidden">
+                    <div className="w-52 left-[16px] top-[30px] absolute inline-flex flex-col justify-start items-start gap-3">
+                      <div className="w-10 h-10 relative overflow-hidden">
+                        <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div className="self-stretch justify-start text-white text-base font-normal font-['DM_Sans'] leading-snug">Confirm hotel check-in for Martin and crew</div>
+                    </div>
+                  </div>
+
+                  {/* Phone Call Card */}
+                  <div className="w-60 h-40 relative bg-black/30 border border-white/40 backdrop-blur-md rounded-2xl shadow-[inset_0_1px_0px_rgba(255,255,255,0.75),0_0_9px_rgba(0,0,0,0.2),0_3px_8px_rgba(0,0,0,0.15)] hover:bg-white/15 transition-all duration-300 overflow-hidden">
+                    <div className="w-52 left-[16px] top-[30px] absolute inline-flex flex-col justify-start items-start gap-3">
+                      <div className="w-10 h-10 relative overflow-hidden">
+                        <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                      </div>
+                      <div className="self-stretch justify-start text-white text-base font-normal font-['DM_Sans'] leading-snug">Call Brooklyn Mirage to confirm load-in time</div>
+                    </div>
+                  </div>
+
+                  {/* VIP Table Card */}
+                  <div className="w-60 h-40 relative bg-black/30 border border-white/40 backdrop-blur-md rounded-2xl shadow-[inset_0_1px_0px_rgba(255,255,255,0.75),0_0_9px_rgba(0,0,0,0.2),0_3px_8px_rgba(0,0,0,0.15)] hover:bg-white/15 transition-all duration-300 overflow-hidden">
+                    <div className="w-52 left-[16px] top-[28px] absolute inline-flex flex-col justify-start items-start gap-3">
+                      <div className="w-10 h-10 relative overflow-hidden">
+                        <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                      </div>
+                      <div className="self-stretch justify-start text-white text-base font-normal font-['DM_Sans'] leading-normal">Follow up with promoter on VIP table holds for guests</div>
+                    </div>
+                  </div>
                 </div>
-                <div className="self-stretch justify-start text-white text-base font-normal font-['DM_Sans'] leading-snug">Confirm hotel check-in for Martin and crew</div>
               </div>
             </div>
 
-            {/* Phone Call Card */}
-            <div className="w-60 h-40 relative bg-gradient-to-br from-white/20 to-white/0 rounded-xl outline outline-1 outline-neutral-900 backdrop-blur-xl overflow-hidden">
-              <div className="w-52 left-[16px] top-[30px] absolute inline-flex flex-col justify-start items-start gap-3">
-                <div className="w-10 h-10 relative overflow-hidden">
-                  <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                  </svg>
-                </div>
-                <div className="self-stretch justify-start text-white text-base font-normal font-['DM_Sans'] leading-snug">Call Brooklyn Mirage to confirm load-in time</div>
-              </div>
-            </div>
-
-            {/* VIP Table Card */}
-            <div className="w-60 h-40 relative bg-gradient-to-br from-white/20 to-white/0 rounded-xl outline outline-1 outline-neutral-900 backdrop-blur-xl overflow-hidden">
-              <div className="w-52 left-[16px] top-[28px] absolute inline-flex flex-col justify-start items-start gap-3">
-                <div className="w-10 h-10 relative overflow-hidden">
-                  <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                  </svg>
-                </div>
-                <div className="self-stretch justify-start text-white text-base font-normal font-['DM_Sans'] leading-normal">Follow up with promoter on VIP table holds for guests</div>
-              </div>
-            </div>
-            </div>
-          </div>
-
-            {/* Bottom Section - Call Inputs for new calls */}
+            {/* Bottom Section - Call Inputs fixed to bottom */}
             {!selectedCallId && (
-              <div className="max-w-4xl mx-auto px-8 pb-12 space-y-8 w-full">
-                <CallInputs
-                  onStartCall={handleStartCall}
-                  onEndCall={handleEndCall}
-                  isCallActive={callStatus !== 'idle'}
-                />
+              <div className="fixed bottom-0 left-64 right-0 z-20">
+                <div className="max-w-4xl mx-auto px-8 py-6">
+                  <CallInputs
+                    onStartCall={handleStartCall}
+                    onEndCall={handleEndCall}
+                    isCallActive={callStatus !== 'idle'}
+                  />
+                </div>
               </div>
             )}
           </div>

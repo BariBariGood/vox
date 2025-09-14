@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -9,6 +9,7 @@ interface UserProfile {
   display_name?: string
   company?: string
   timezone: string
+  profile_picture_url?: string
   created_at: string
   updated_at: string
 }
@@ -18,6 +19,7 @@ export function AccountPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   
   // Form state
@@ -25,6 +27,10 @@ export function AccountPage() {
   const [displayName, setDisplayName] = useState('')
   const [company, setCompany] = useState('')
   const [timezone, setTimezone] = useState('UTC')
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string>('')
+  
+  // File input ref
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Load user profile on mount
   useEffect(() => {
@@ -54,6 +60,7 @@ export function AccountPage() {
         setDisplayName(data.display_name || '')
         setCompany(data.company || '')
         setTimezone(data.timezone || 'UTC')
+        setProfilePictureUrl(data.profile_picture_url || '')
       } else {
         // No profile exists yet, use defaults
         setDisplayName(user.email?.split('@')[0] || '')
@@ -85,7 +92,8 @@ export function AccountPage() {
         phone_number: formattedPhone || null,
         display_name: displayName.trim() || null,
         company: company.trim() || null,
-        timezone: timezone
+        timezone: timezone,
+        profile_picture_url: profilePictureUrl || null
       }
 
       let result
@@ -149,6 +157,74 @@ export function AccountPage() {
     }
   }
 
+  const handleProfilePictureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !user) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setMessage({ type: 'error', text: 'Please select a valid image file.' })
+      return
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'Image must be smaller than 5MB.' })
+      return
+    }
+
+    try {
+      setUploading(true)
+      setMessage(null)
+
+      // Generate unique filename
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`
+      const filePath = `profile-pictures/${fileName}`
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('user-uploads')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        })
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError)
+        setMessage({ type: 'error', text: 'Failed to upload image. Please try again.' })
+        return
+      }
+
+      // Get public URL
+      const { data } = supabase.storage
+        .from('user-uploads')
+        .getPublicUrl(filePath)
+
+      if (data?.publicUrl) {
+        setProfilePictureUrl(data.publicUrl)
+        setMessage({ type: 'success', text: 'Profile picture uploaded! Remember to save your profile.' })
+      }
+    } catch (error) {
+      console.error('Error uploading profile picture:', error)
+      setMessage({ type: 'error', text: 'An unexpected error occurred during upload.' })
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleRemoveProfilePicture = () => {
+    setProfilePictureUrl('')
+    setMessage({ type: 'success', text: 'Profile picture removed! Remember to save your profile.' })
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const getProfilePictureUrl = () => {
+    return profilePictureUrl || '/src/assets/blank-profile.webp'
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -198,6 +274,80 @@ export function AccountPage() {
           </div>
 
           <form onSubmit={saveProfile} className="px-6 py-6 space-y-6">
+            {/* Profile Picture */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Profile Picture
+              </label>
+              <div className="flex items-center space-x-4">
+                <div className="flex-shrink-0">
+                  <img
+                    src={getProfilePictureUrl()}
+                    alt="Profile"
+                    className="h-16 w-16 rounded-full object-cover border-2 border-gray-200"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = '/src/assets/blank-profile.webp';
+                    }}
+                  />
+                </div>
+                <div className="flex-1">
+                  <div className="flex space-x-2">
+                    <label
+                      htmlFor="profile-picture"
+                      className={`inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium cursor-pointer transition-colors ${
+                        uploading
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-white text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {uploading ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                          Upload Photo
+                        </>
+                      )}
+                    </label>
+                    <input
+                      id="profile-picture"
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProfilePictureUpload}
+                      disabled={uploading}
+                      className="hidden"
+                    />
+                    {profilePictureUrl && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveProfilePicture}
+                        disabled={uploading}
+                        className="inline-flex items-center px-3 py-2 border border-red-300 rounded-lg text-sm font-medium text-red-700 bg-white hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <svg className="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    JPG, PNG, WebP or GIF. Max size 5MB.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Email (read-only) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
