@@ -20,7 +20,7 @@ type CallStatus = 'idle' | 'dialing' | 'mapping' | 'bridged' | 'ended' | 'failed
 export function Dashboard() {
   const { user, signOut } = useAuth()
   const [callStatus, setCallStatus] = useState<CallStatus>('idle')
-  const [userProfile, setUserProfile] = useState<{profile_picture_url?: string} | null>(null)
+  const [userProfile, setUserProfile] = useState<{profile_picture_url?: string, phone_number?: string} | null>(null)
   const [currentCall, setCurrentCall] = useState<{
     phoneNumber: string
     goal: string
@@ -403,7 +403,7 @@ export function Dashboard() {
     try {
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('profile_picture_url')
+        .select('profile_picture_url, phone_number')
         .eq('id', user.id)
         .single()
       
@@ -468,6 +468,73 @@ export function Dashboard() {
     if (success) {
       setDeleteModalOpen(false)
       setCallToDelete(null)
+    }
+  }
+
+  // Handle call transfer to user
+  const handleCallTransfer = async (transferArgs: any) => {
+    if (!currentCall?.vapiCallId || !user) return
+
+    try {
+      console.log('🌉 Initiating call transfer:', transferArgs)
+      
+      // Get user's phone number from profile or use a default
+      let customerNumber = user?.phone || userProfile?.phone_number
+      
+      if (!customerNumber) {
+        console.warn('⚠️ No customer phone number available for transfer')
+        // Add system message about missing phone number
+        const errorEvent: StreamEvent = {
+          id: `transfer-error-${Date.now()}`,
+          timestamp: new Date(),
+          type: 'error',
+          message: 'Transfer requested but no customer phone number configured. Please add your phone number in Account Settings.'
+        }
+        setStreamEvents(prev => {
+          const newEvents = [...prev, errorEvent]
+          streamEventsRef.current = newEvents
+          return newEvents
+        })
+        return
+      }
+
+      // Add transfer event to stream
+      const transferEvent: StreamEvent = {
+        id: `transfer-${Date.now()}`,
+        timestamp: new Date(),
+        type: 'transfer',
+        message: `Transferring call to customer: ${transferArgs.reason || 'Connecting you with the representative'}`
+      }
+      setStreamEvents(prev => {
+        const newEvents = [...prev, transferEvent]
+        streamEventsRef.current = newEvents
+        return newEvents
+      })
+
+      // Attempt the transfer
+      await vapiService.transferCall(
+        currentCall.vapiCallId,
+        customerNumber,
+        transferArgs.reason || 'Representative ready to help'
+      )
+
+      console.log('✅ Transfer initiated successfully')
+      
+    } catch (error) {
+      console.error('❌ Transfer failed:', error)
+      
+      // Add error event to stream
+      const errorEvent: StreamEvent = {
+        id: `transfer-error-${Date.now()}`,
+        timestamp: new Date(),
+        type: 'error',
+        message: `Transfer failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      }
+      setStreamEvents(prev => {
+        const newEvents = [...prev, errorEvent]
+        streamEventsRef.current = newEvents
+        return newEvents
+      })
     }
   }
 
@@ -591,6 +658,9 @@ export function Dashboard() {
             setCallStatus('bridged')
             const result = { type: 'bridged' as const }
             callResultRef.current = result
+            
+            // Initiate the actual transfer
+            handleCallTransfer(vapiEvent.data.function.arguments)
           }
         } else if (vapiEvent.type === 'call-ended') {
           console.log('🏁🏁🏁 CALL ENDED EVENT RECEIVED')
@@ -625,7 +695,7 @@ export function Dashboard() {
       const vapiCallId = await vapiService.startCall({
         phoneNumber,
         callGoal,
-        customerNumber: user?.phone || undefined
+        customerNumber: user?.phone || userProfile?.phone_number || undefined
       })
 
       console.log('VAPI call started with ID:', vapiCallId)
