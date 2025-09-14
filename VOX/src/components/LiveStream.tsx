@@ -126,22 +126,22 @@ export function LiveStream({ events, isActive, callGoal }: LiveStreamProps) {
 
   if (!isActive && events.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-lg p-6 shadow-xl">
         <div className="flex items-center mb-4">
-          <div className="h-8 w-8 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="h-8 w-8 flex items-center justify-center mr-3">
+            <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-gray-900">Live Call Stream</h3>
+          <h3 className="text-lg font-semibold text-white">Live Call Stream</h3>
         </div>
         <div className="text-center py-8">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-16 h-16 flex items-center justify-center mx-auto mb-4">
+            <svg className="h-8 w-8 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
             </svg>
           </div>
-          <p className="text-gray-500 text-sm">
+          <p className="text-white/60 text-sm">
             Start a call to see real-time navigation and events here
           </p>
         </div>
@@ -150,18 +150,18 @@ export function LiveStream({ events, isActive, callGoal }: LiveStreamProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+    <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-lg shadow-xl">
+      <div className="flex items-center justify-between p-4 border-b border-white/10">
         <div className="flex items-center">
-          <div className="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-            <svg className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="h-8 w-8 flex items-center justify-center mr-3">
+            <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Live Call Stream</h3>
+            <h3 className="text-lg font-semibold text-white">Live Call Stream</h3>
             {callGoal && (
-              <p className="text-sm text-gray-600 truncate max-w-md">Goal: {callGoal}</p>
+              <p className="text-sm text-white/60 truncate max-w-md">Goal: {callGoal}</p>
             )}
           </div>
         </div>

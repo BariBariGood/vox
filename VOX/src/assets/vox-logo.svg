@@ -1,0 +1,10 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- VOX Logo - White geometric design -->
+  <g fill="white">
+    <!-- Main V shape -->
+    <path d="M8 6L12 6L16 18L20 6L24 6L18 24L14 24L8 6Z"/>
+    <!-- Accent lines -->
+    <rect x="6" y="26" width="20" height="2" rx="1"/>
+    <rect x="10" y="4" width="12" height="1" rx="0.5"/>
+  </g>
+</svg>

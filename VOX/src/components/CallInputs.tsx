@@ -51,20 +51,8 @@ export function CallInputs({ onStartCall, isCallActive = false }: CallInputsProp
     const formatted = formatPhoneNumber(e.target.value)
     setPhoneNumber(formatted)
     
-    // Clear error when user starts typing
-    if (phoneError) {
-      setPhoneError(null)
-    }
   }
 
-  const handleGoalChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setCallGoal(e.target.value)
-    
-    // Clear error when user starts typing
-    if (goalError) {
-      setGoalError(null)
-    }
-  }
 
   const handleStartCall = () => {
     // Validate inputs
@@ -88,124 +76,90 @@ export function CallInputs({ onStartCall, isCallActive = false }: CallInputsProp
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <div className="flex items-center mb-6">
-        <div className="h-10 w-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center mr-3">
-          <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div className="flex gap-4 items-center">
+      {/* Phone Number Input */}
+      <div className="relative flex-shrink-0">
+        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+          <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
           </svg>
         </div>
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">Start New Call</h3>
-          <p className="text-sm text-gray-600">Let VOX handle the phone navigation for you</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Phone Number Input */}
-        <div className="space-y-2">
-          <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-            Phone Number to Call
-          </label>
-          <div className="relative">
-            <input
-              id="phone"
-              type="tel"
-              value={phoneNumber}
-              onChange={handlePhoneChange}
-              disabled={isCallActive}
-              placeholder="(555) 123-4567"
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                phoneError 
-                  ? 'border-red-300 bg-red-50' 
-                  : 'border-gray-300 hover:border-gray-400'
-              } ${isCallActive ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-              maxLength={14}
-            />
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-              <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-              </svg>
-            </div>
-          </div>
-          {phoneError && (
-            <p className="text-sm text-red-600 flex items-center">
-              <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              {phoneError}
-            </p>
-          )}
-        </div>
-
-        {/* Call Goal Input */}
-        <div className="space-y-2">
-          <label htmlFor="goal" className="block text-sm font-medium text-gray-700">
-            Goal of Call
-          </label>
-          <textarea
-            id="goal"
-            value={callGoal}
-            onChange={handleGoalChange}
-            disabled={isCallActive}
-            placeholder="e.g., Schedule a doctor's appointment for next week, get customer support for my billing issue, speak to sales about pricing..."
-            rows={3}
-            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none ${
-              goalError 
-                ? 'border-red-300 bg-red-50' 
-                : 'border-gray-300 hover:border-gray-400'
-            } ${isCallActive ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-          />
-          {goalError && (
-            <p className="text-sm text-red-600 flex items-center">
-              <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              {goalError}
-            </p>
-          )}
-          <p className="text-xs text-gray-500">
-            Be specific about what you want to accomplish. This helps VOX navigate menus more effectively.
+        <input
+          id="phone"
+          type="tel"
+          value={phoneNumber}
+          onChange={handlePhoneChange}
+          disabled={isCallActive}
+          placeholder="Enter a phone number"
+          className={`w-80 pl-12 pr-4 py-4 bg-gradient-to-br from-white/20 to-white/0 rounded-xl outline outline-1 outline-neutral-900 backdrop-blur-xl text-white placeholder-white/50 transition-colors ${
+            phoneError 
+              ? 'border-red-400 bg-red-500/10' 
+              : 'hover:outline-white/30 focus:outline-blue-400'
+          } ${isCallActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+          maxLength={14}
+        />
+        {phoneError && (
+          <p className="absolute top-full mt-1 text-sm text-red-400 flex items-center">
+            <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            {phoneError}
           </p>
+        )}
+      </div>
+
+      {/* Call Goal Input */}
+      <div className="relative flex-1">
+        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+          <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
         </div>
+        <input
+          id="goal"
+          type="text"
+          value={callGoal}
+          onChange={(e) => setCallGoal(e.target.value)}
+          disabled={isCallActive}
+          placeholder="Add what you want to complete here"
+          className={`w-full pl-12 pr-4 py-4 bg-gradient-to-br from-white/20 to-white/0 rounded-xl outline outline-1 outline-neutral-900 backdrop-blur-xl text-white placeholder-white/50 transition-colors ${
+            goalError 
+              ? 'border-red-400 bg-red-500/10' 
+              : 'hover:outline-white/30 focus:outline-blue-400'
+          } ${isCallActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+        />
+        {goalError && (
+          <p className="absolute top-full mt-1 text-sm text-red-400 flex items-center">
+            <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            {goalError}
+          </p>
+        )}
       </div>
 
-      {/* Start Call Button */}
-      <div className="mt-6 flex justify-center">
-        <button
-          onClick={handleStartCall}
-          disabled={!isFormValid() || isCallActive}
-          className={`px-8 py-3 rounded-lg font-medium transition-all duration-200 ${
-            isFormValid() && !isCallActive
-              ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 shadow-lg hover:shadow-xl transform hover:scale-105'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          }`}
-        >
-          {isCallActive ? (
-            <div className="flex items-center">
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Call in Progress...
-            </div>
-          ) : (
-            <div className="flex items-center">
-              <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-              </svg>
-              Start Call
-            </div>
-          )}
-        </button>
-      </div>
-
-      {/* Helper Text */}
-      <div className="mt-4 text-center">
-        <p className="text-xs text-gray-500">
-          VOX will dial the number, navigate phone menus, and connect you to a human representative
-        </p>
-      </div>
+      {/* Submit Button */}
+      <button
+        onClick={handleStartCall}
+        disabled={!isFormValid() && !isCallActive}
+        className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 ${
+          isCallActive
+            ? 'bg-red-500/20 backdrop-blur-md border border-red-500/40 hover:bg-red-500/30 text-red-400'
+            : isFormValid()
+            ? 'bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 text-white'
+            : 'bg-white/5 border border-white/10 text-white/30 cursor-not-allowed'
+        }`}
+      >
+        {isCallActive ? (
+          <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+          </svg>
+        ) : (
+          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
+          </svg>
+        )}
+      </button>
     </div>
   )
 }

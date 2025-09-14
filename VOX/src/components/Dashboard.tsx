@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { CallInputs } from './CallInputs'
 import { StatusBadge } from './StatusBadge'
-import { LiveStream } from './LiveStream'
 import { CallHistory } from './CallHistory'
 import type { StreamEvent } from './LiveStream'
 import { vapiService, type VAPICallEvent } from '../services/vapiService'
@@ -365,255 +364,119 @@ export function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <div className="h-8 w-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                </svg>
-              </div>
-              <h1 className="ml-3 text-xl font-semibold text-gray-900">VOX</h1>
+    <div className="min-h-screen relative bg-gray-950 overflow-hidden">
+      {/* Background Blur Effect */}
+      <div className="w-[749.23px] h-[749.23px] left-[345.39px] top-[137.39px] absolute bg-gradient-to-b from-blue-800/50 to-indigo-100/50 rounded-full border-[20px] border-indigo-100 blur-[125px]" />
+      
+      {/* Sidebar Navigation */}
+      <nav className="fixed left-0 top-0 h-full w-64 bg-slate-800/50 backdrop-blur-sm border-r border-slate-700/50 flex flex-col z-10 lg:w-64 md:w-56 sm:w-48">
+        <div className="p-6">
+          <div className="flex items-center">
+            <div className="h-8 w-8 flex items-center justify-center">
+              <img src="/src/assets/vox-logo.svg" alt="VOX Logo" className="h-8 w-8" />
             </div>
-            
-            <div className="flex items-center space-x-4">
-              <StatusBadge status={callStatus} />
-              <span className="text-sm text-gray-600">
-                Welcome, {user?.email}
-              </span>
-              <Link
-                to="/account"
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                title="Account Settings"
-              >
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </Link>
-              <button
-                onClick={signOut}
-                className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Sign Out
-              </button>
-            </div>
+            <h1 className="ml-3 text-xl font-semibold text-white">VOX</h1>
+          </div>
+        </div>
+        
+        {/* Navigation Items */}
+        <div className="flex-1 px-4 space-y-2">
+          <div className="flex items-center px-3 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer">
+            <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+            </svg>
+            Console
+          </div>
+          <div className="flex items-center px-3 py-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer">
+            <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            Projects
+          </div>
+        </div>
+        
+        {/* Bottom section with user info and controls */}
+        <div className="p-4 border-t border-slate-700/50 space-y-3">
+          <StatusBadge status={callStatus} />
+          <div className="text-sm text-white/60">
+            Welcome, {user?.email}
+          </div>
+          <div className="flex space-x-2">
+            <Link
+              to="/account"
+              className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors flex-1 flex justify-center"
+              title="Account Settings"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </Link>
+            <button
+              onClick={signOut}
+              className="bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex-1"
+            >
+              Sign Out
+            </button>
           </div>
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0 space-y-6">
-          
-          {/* Welcome Section */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Welcome to VOX! 🎯
-              </h3>
-              <p className="text-gray-700 mb-4">
-                Your AI-powered call assistant is ready to help you navigate phone systems and connect with humans faster.
-              </p>
-              <div className="flex items-center text-sm text-gray-600">
-                <svg className="w-4 h-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                System ready - Enter call details below
+      {/* Main Content */}
+      <main className="ml-64 lg:ml-64 md:ml-56 sm:ml-48 overflow-auto relative z-10 flex flex-col min-h-screen">
+        {/* Feature Cards - Centered in middle */}
+        <div className="flex-1 flex flex-col items-center justify-center py-16">
+          <div className="max-w-4xl mx-auto px-8 text-center">
+            {/* Header Text */}
+            <div className="self-stretch text-center justify-start text-white text-3xl font-medium font-['DM_Sans'] leading-9 mb-9">Hi, Josh. How can I save your time?</div>
+            
+            <div className="self-stretch inline-flex justify-start items-center gap-12">
+            {/* Hotel Check-in Card */}
+            <div className="w-60 h-40 relative bg-gradient-to-br from-white/20 to-white/0 rounded-xl outline outline-1 outline-neutral-900 backdrop-blur-xl overflow-hidden">
+              <div className="w-52 left-[16px] top-[30px] absolute inline-flex flex-col justify-start items-start gap-3">
+                <div className="w-10 h-10 relative overflow-hidden">
+                  <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div className="self-stretch justify-start text-white text-base font-normal font-['DM_Sans'] leading-snug">Confirm hotel check-in for Martin and crew</div>
+              </div>
+            </div>
+
+            {/* Phone Call Card */}
+            <div className="w-60 h-40 relative bg-gradient-to-br from-white/20 to-white/0 rounded-xl outline outline-1 outline-neutral-900 backdrop-blur-xl overflow-hidden">
+              <div className="w-52 left-[16px] top-[30px] absolute inline-flex flex-col justify-start items-start gap-3">
+                <div className="w-10 h-10 relative overflow-hidden">
+                  <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                </div>
+                <div className="self-stretch justify-start text-white text-base font-normal font-['DM_Sans'] leading-snug">Call Brooklyn Mirage to confirm load-in time</div>
+              </div>
+            </div>
+
+            {/* VIP Table Card */}
+            <div className="w-60 h-40 relative bg-gradient-to-br from-white/20 to-white/0 rounded-xl outline outline-1 outline-neutral-900 backdrop-blur-xl overflow-hidden">
+              <div className="w-52 left-[16px] top-[28px] absolute inline-flex flex-col justify-start items-start gap-3">
+                <div className="w-10 h-10 relative overflow-hidden">
+                  <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
+                <div className="self-stretch justify-start text-white text-base font-normal font-['DM_Sans'] leading-normal">Follow up with promoter on VIP table holds for guests</div>
               </div>
             </div>
           </div>
+        </div>
+      </div>
 
+        {/* Bottom Section - Inputs and History */}
+        <div className="max-w-4xl mx-auto px-8 pb-12 space-y-8 w-full">
           {/* Call Inputs */}
           <CallInputs 
             onStartCall={handleStartCall}
             isCallActive={callStatus !== 'idle'}
           />
 
-          {/* Live Stream - Always visible but shows different states */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <LiveStream 
-                events={streamEvents}
-                isActive={callStatus !== 'idle' && callStatus !== 'ended'}
-                callGoal={currentCall?.goal}
-              />
-            </div>
-            
-            <div className="space-y-6">
-              {/* Current Call Info */}
-              {currentCall && (
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Current Call</h3>
-                  <div className="space-y-3">
-                    <div>
-                      <span className="text-sm font-medium text-gray-500">Phone Number:</span>
-                      <p className="text-gray-900 font-mono">{currentCall.phoneNumber}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-500">Goal:</span>
-                      <p className="text-gray-900 text-sm">{currentCall.goal}</p>
-                    </div>
-                    {currentCall.vapiCallId && (
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">VAPI Call ID:</span>
-                        <p className="text-gray-900 font-mono text-xs">{currentCall.vapiCallId}</p>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Call Controls */}
-                  {callStatus !== 'idle' && callStatus !== 'ended' && currentCall.vapiCallId && (
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <button
-                        onClick={async () => {
-                          try {
-                            // Add immediate feedback
-                            setStreamEvents(prev => [...prev, {
-                              id: `end-call-${Date.now()}`,
-                              timestamp: new Date(),
-                              type: 'system',
-                              message: 'Ending call...'
-                            }])
-                            
-                            console.log('Ending VAPI call:', currentCall.vapiCallId)
-                            const result = await vapiService.endCall(currentCall.vapiCallId!)
-                            console.log('End call result:', result)
-                            
-                            // Add success feedback
-                            setStreamEvents(prev => [...prev, {
-                              id: `call-ended-${Date.now()}`,
-                              timestamp: new Date(),
-                              type: 'complete',
-                              message: 'Call ended successfully by user'
-                            }])
-                            
-                            setCallStatus('ended')
-                            setTimeout(() => {
-                              setCallStatus('idle')
-                              setCurrentCall(null)
-                              setTimeout(() => setStreamEvents([]), 3000) // Clear events after showing result
-                            }, 2000)
-                          } catch (error) {
-                            console.error('Error ending call:', error)
-                            // Add error feedback
-                            setStreamEvents(prev => [...prev, {
-                              id: `end-call-error-${Date.now()}`,
-                              timestamp: new Date(),
-                              type: 'error',
-                              message: `Failed to end call: ${error.message}`
-                            }])
-                          }
-                        }}
-                        className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                      >
-                        End Call
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Call Result */}
-              {callResult && callResult.type === 'auto_complete' && callResult.data && (
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="flex items-center mb-4">
-                    <div className="h-8 w-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                      <svg className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900">Call Completed!</h3>
-                  </div>
-                  
-                  <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                    <h4 className="font-medium text-green-900 mb-2">{callResult.data.title}</h4>
-                    {callResult.data.link && (
-                      <a 
-                        href={callResult.data.link} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center text-green-700 hover:text-green-800 font-medium text-sm mb-2"
-                      >
-                        <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                        Open Link
-                      </a>
-                    )}
-                    {callResult.data.details && (
-                      <p className="text-green-800 text-sm">{callResult.data.details}</p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {callResult && callResult.type === 'bridged' && (
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="flex items-center mb-4">
-                    <div className="h-8 w-8 bg-red-100 rounded-lg flex items-center justify-center mr-3">
-                      <svg className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900">You're Connected!</h3>
-                  </div>
-                  
-                  <div className="bg-red-50 rounded-lg p-4 border border-red-200">
-                    <p className="text-red-800 text-sm">
-                      VOX has connected you to a human representative. The call is now in your hands!
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Features Preview */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center mb-3">
-                <div className="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                  <svg className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                </div>
-                <h4 className="font-medium text-gray-900">Live Stream</h4>
-              </div>
-              <p className="text-sm text-gray-600">
-                Real-time transcript of call navigation and key moments will appear here.
-              </p>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center mb-3">
-                <div className="h-8 w-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                  <svg className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h4 className="font-medium text-gray-900">Call History</h4>
-              </div>
-              <p className="text-sm text-gray-600">
-                Your completed calls with outcomes and transcripts will be stored here.
-              </p>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center mb-3">
-                <div className="h-8 w-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
-                  <svg className="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                </div>
-                <h4 className="font-medium text-gray-900">AI Memory</h4>
-              </div>
-              <p className="text-sm text-gray-600">
-                Learned IVR paths and successful navigation strategies for faster future calls.
-              </p>
-            </div>
-          </div>
-          
           {/* Call History Section */}
           <div className="mt-8">
             <CallHistory history={callHistory} />
