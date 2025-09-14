@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { CallInputs } from './CallInputs'
@@ -25,11 +25,18 @@ export function Dashboard() {
     goal: string
     vapiCallId?: string
   } | null>(null)
+  const currentCallRef = useRef<{
+    phoneNumber: string
+    goal: string
+    vapiCallId?: string
+  } | null>(null)
   const [streamEvents, setStreamEvents] = useState<StreamEvent[]>([])
+  const streamEventsRef = useRef<StreamEvent[]>([])
   const [callResult, setCallResult] = useState<{
     type: 'auto_complete' | 'bridged'
     data?: any
   } | null>(null)
+  const callResultRef = useRef<{ type: 'auto_complete' | 'bridged'; data?: any } | null>(null)
   const [callHistory, setCallHistory] = useState<any[]>([])
   const [selectedCallId, setSelectedCallId] = useState<number | null>(null)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
@@ -129,16 +136,46 @@ export function Dashboard() {
   }
 
   // Save completed call to database
-  const saveCallToDatabase = async () => {
-    if (!currentCall || !user) return
+  const saveCallToDatabase = async (events?: StreamEvent[]) => {
+    console.log('🚀🚀🚀 === SAVE CALL TO DATABASE STARTED ===')
+    console.log('📦 Current call (state):', JSON.stringify(currentCall, null, 2))
+    console.log('📦 Current call (ref):', JSON.stringify(currentCallRef.current, null, 2))
+    console.log('👤 User:', JSON.stringify(user, null, 2))
+    console.log('🎯 Events provided:', events ? events.length : 'No events provided')
+    console.log('🎯 Events in ref:', streamEventsRef.current.length)
+
+    // Use the ref which won't be cleared by React state updates
+    const callToSave = currentCallRef.current
+    if (!callToSave) {
+      console.error('❌ CRITICAL: No current call to save')
+      console.error('❌ currentCall (state):', currentCall)
+      console.error('❌ currentCallRef (ref):', currentCallRef.current)
+      return
+    }
+
+    if (!user) {
+      console.error('❌ CRITICAL: No user logged in, cannot save call')
+      console.error('❌ user is:', user)
+      return
+    }
+
+    // Use provided events or fall back to ref (which is kept in sync)
+    const eventsToProcess = events || streamEventsRef.current
+    const currentCallResult = callResultRef.current
+    
+    console.log('📊 Events to process:', eventsToProcess.length)
+    console.log('📊 Call result:', JSON.stringify(currentCallResult, null, 2))
 
     try {
-      console.log('🔍 Stream events to save:', streamEvents.length)
-      console.log('🔍 Sample events:', streamEvents.slice(0, 5))
+      console.log('🔍 Stream events to save:', eventsToProcess.length)
+      console.log('🔍 Sample events:', eventsToProcess.slice(0, 5))
+
+      console.log('🔍 Processing transcript from events...')
+      console.log('🔍 All events:', eventsToProcess.map(e => ({ type: e.type, message: e.message.substring(0, 100) })))
 
       // Extract full transcript from stream events
       // Look for events that contain actual conversation content
-      const transcript = streamEvents.filter(event => {
+      const transcript = eventsToProcess.filter(event => {
         // Include transcript messages (VOX: or Other Party:)
         const isTranscript = event.message.includes('VOX:') ||
                            event.message.includes('Other Party:') ||
@@ -154,7 +191,10 @@ export function Dashboard() {
                               event.type === 'menu' ||
                               event.type === 'info'
 
-        return isTranscript || isImportantSystem || isConversation
+        const shouldInclude = isTranscript || isImportantSystem || isConversation
+        console.log(`🔍 Event "${event.message.substring(0, 50)}" - Include: ${shouldInclude} (transcript: ${isTranscript}, system: ${isImportantSystem}, conversation: ${isConversation})`)
+        
+        return shouldInclude
       }).map(event => {
         // Parse the speaker from the message format "Speaker: content"
         let speaker = 'System'
@@ -186,7 +226,7 @@ export function Dashboard() {
       console.log('📝 Processed transcript:', transcript)
 
       // Extract call summary if available
-      const summaryEvent = streamEvents.find(event =>
+      const summaryEvent = eventsToProcess.find(event =>
         event.message.includes('Call Summary:')
       )
       const callSummary = summaryEvent
@@ -195,58 +235,122 @@ export function Dashboard() {
 
       console.log('📋 Call summary found:', callSummary)
 
+      // Ensure transcript is properly formatted for JSONB
+      const transcriptForDB = transcript.length > 0 ? JSON.parse(JSON.stringify(transcript)) : null
+
       const callRecord = {
         user_id: user.id,
-        phone_number: currentCall.phoneNumber,
-        call_goal: currentCall.goal,
-        vapi_call_id: currentCall.vapiCallId || null,
+        phone_number: callToSave.phoneNumber,
+        call_goal: callToSave.goal,
+        vapi_call_id: callToSave.vapiCallId || null,
         call_status: 'completed',
-        transcript: transcript.length > 0 ? transcript : null,
+        transcript: transcriptForDB,
         call_summary: callSummary,
-        call_result: callResult?.type || 'auto_complete'
+        call_result: currentCallResult?.type || 'auto_complete',
+        created_at: new Date().toISOString()
       }
 
-        console.log('💾 Saving call to database:', callRecord)
-        console.log('📝 Transcript length:', transcript.length)
-        console.log('👤 User ID:', user.id)
-        console.log('🔐 User object:', user)
+      // Log the exact data we're trying to save
+      console.log('📊 Transcript format check:')
+      console.log('  - Type:', typeof transcriptForDB)
+      console.log('  - Is Array:', Array.isArray(transcriptForDB))
+      console.log('  - Sample:', transcriptForDB?.[0])
+
+      console.log('💾 Saving call to database:', JSON.stringify(callRecord, null, 2))
+      console.log('📝 Transcript length:', transcript.length)
+      console.log('👤 User ID:', user.id)
+      console.log('🔐 User object:', user)
+
+      // Check current auth session
+      const { data: session } = await supabase.auth.getSession()
+      console.log('🔑🔑🔑 AUTH CHECK')
+      console.log('🔑 Current session:', JSON.stringify(session, null, 2))
+      console.log('🔑 Session user:', JSON.stringify(session.session?.user, null, 2))
+      console.log('🔑 Session exists:', !!session.session)
+      console.log('🔑 User ID from session:', session.session?.user?.id)
+      console.log('🔑 User ID from state:', user.id)
+
+      // Double-check user ID matches
+      if (session.session?.user?.id !== user.id) {
+        console.warn('⚠️⚠️⚠️ User ID mismatch! Session:', session.session?.user?.id, 'State:', user.id)
+      }
+      
+      // Test if we can access the table at all
+      console.log('🔍 Testing table access...')
+      const { data: testData, error: testError } = await supabase
+        .from('call_history')
+        .select('count')
+        .limit(1)
+      console.log('🔍 Table access test - Data:', testData)
+      console.log('🔍 Table access test - Error:', testError)
+
+      // Save to Supabase
+      console.log('📤📤📤 ATTEMPTING DATABASE INSERT...')
+      console.log('📤 Record to insert:', JSON.stringify(callRecord, null, 2))
+      console.log('📤 Record size:', JSON.stringify(callRecord).length, 'characters')
+      
+      const { data, error } = await supabase
+        .from('call_history')
+        .insert([callRecord])
+        .select()
+
+      console.log('📤 INSERT COMPLETED')
+      console.log('📤 Error:', error)
+      console.log('📤 Data:', data)
+
+      if (error) {
+        console.error('❌❌❌ FAILED TO SAVE CALL:', error)
+        console.error('❌ Error code:', error.code)
+        console.error('❌ Error message:', error.message)
+        console.error('❌ Error details:', error.details)
+        console.error('❌ Error hint:', error.hint)
+        console.error('❌ Full error object:', JSON.stringify(error, null, 2))
+
+        // Check if it's an auth error
+        if (error.code === 'PGRST301' || error.message?.includes('JWT')) {
+          console.error('🔐 Authentication error - user may need to re-login')
+        }
         
-        // Check current auth session
-        const { data: session } = await supabase.auth.getSession()
-        console.log('🔑 Current session:', session)
-        console.log('🔑 Session user:', session.session?.user)
+        // Check if it's a validation error
+        if (error.code === '23505') {
+          console.error('🔑 Duplicate key error')
+        }
+        
+        // Check if it's an RLS error
+        if (error.code === '42501' || error.message?.includes('permission')) {
+          console.error('🔒 Permission/RLS error')
+        }
+        
+        return // Exit early on error
+      } else {
+        console.log('✅ Call saved successfully:', data)
+        console.log('✅ Saved data details:', JSON.stringify(data, null, 2))
 
-        // Save to Supabase
-        const { data, error } = await supabase
-          .from('call_history')
-          .insert([callRecord])
-          .select()
-
-        if (error) {
-          console.error('❌ Failed to save call:', error)
-          console.error('Error details:', error.message, error.details)
-          console.error('Error hint:', error.hint)
-        } else {
-          console.log('✅ Call saved successfully:', data)
-          console.log('✅ Saved data details:', JSON.stringify(data, null, 2))
-          
+        if (data && data[0]) {
           // Verify the record was actually saved by checking the table
           const { data: checkData, error: checkError } = await supabase
             .from('call_history')
             .select('*')
-            .eq('id', data[0]?.id)
-          
+            .eq('id', data[0].id)
+
           if (checkError) {
             console.error('❌ Error checking saved record:', checkError)
           } else {
             console.log('✅ Verification - Record exists:', checkData)
           }
-          
-          // Reload call history
-          loadCallHistory()
+        } else {
+          console.warn('⚠️ No data returned after insert')
         }
+
+        // Reload call history
+        await loadCallHistory()
+      }
     } catch (error) {
-      console.error('❌ Error saving call:', error)
+      console.error('❌ Exception during save:', error)
+      if (error instanceof Error) {
+        console.error('Error message:', error.message)
+        console.error('Error stack:', error.stack)
+      }
     }
   }
   
@@ -376,11 +480,17 @@ export function Dashboard() {
         type: 'complete',
         message: 'Call ended by user'
       }
-      setStreamEvents(prev => [...prev, endEvent])
+      setStreamEvents(prev => {
+        const newEvents = [...prev, endEvent]
+        streamEventsRef.current = newEvents // Keep ref in sync
+        return newEvents
+      })
 
       // Save to database after delay
       setTimeout(() => {
-        saveCallToDatabase()
+        console.log('🔴🔴🔴 MANUAL END CALL - About to save to database')
+        console.log('🔴 Stream events count:', streamEventsRef.current.length)
+        saveCallToDatabase(streamEventsRef.current)
       }, 1000)
 
       // Reset UI after delay
@@ -398,8 +508,13 @@ export function Dashboard() {
     try {
       // Clear previous call data when starting new call
       setStreamEvents([])
+      streamEventsRef.current = [] // Clear ref too
       setCallResult(null)
-      setCurrentCall({ phoneNumber, goal: callGoal })
+      callResultRef.current = null // Clear ref too
+      currentCallRef.current = null // Clear call ref too
+      const newCall = { phoneNumber, goal: callGoal }
+      setCurrentCall(newCall)
+      currentCallRef.current = newCall // Keep ref in sync
       setCallStatus('dialing')
 
       // Add initial event
@@ -410,6 +525,7 @@ export function Dashboard() {
         message: `Initiating call to ${phoneNumber}...`
       }
       setStreamEvents([initialEvent])
+      streamEventsRef.current = [initialEvent] // Keep ref in sync
 
       // Test VAPI connection first
       console.log('Testing VAPI connection...')
@@ -424,14 +540,22 @@ export function Dashboard() {
         type: 'system',
         message: 'Connected to VAPI service - Creating AI assistant...'
       }
-      setStreamEvents(prev => [...prev, connectionEvent])
+      setStreamEvents(prev => {
+        const newEvents = [...prev, connectionEvent]
+        streamEventsRef.current = newEvents // Keep ref in sync
+        return newEvents
+      })
 
       // Set up event handler
       const eventHandler = vapiService.setupWebhookHandler((vapiEvent: VAPICallEvent) => {
         console.log('VAPI Event:', vapiEvent)
         
         const streamEvent = convertVAPIEventToStreamEvent(vapiEvent)
-        setStreamEvents(prev => [...prev, streamEvent])
+        setStreamEvents(prev => {
+          const newEvents = [...prev, streamEvent]
+          streamEventsRef.current = newEvents // Keep ref in sync
+          return newEvents
+        })
 
         // Update status based on event
         if (vapiEvent.type === 'call-started') {
@@ -439,24 +563,31 @@ export function Dashboard() {
         } else if (vapiEvent.type === 'tool-call') {
           if (vapiEvent.data?.function?.name === 'gatherInformation') {
             setCallStatus('ended')
-            setCallResult({
-              type: 'auto_complete',
+            const result = {
+              type: 'auto_complete' as const,
               data: vapiEvent.data.function.arguments
-            })
+            }
+            setCallResult(result)
+            callResultRef.current = result
             // Don't auto-reset - wait for call-ended event
           } else if (vapiEvent.data?.function?.name === 'transferCall') {
             setCallStatus('bridged')
-            setCallResult({ type: 'bridged' })
+            const result = { type: 'bridged' as const }
+            setCallResult(result)
+            callResultRef.current = result
           }
         } else if (vapiEvent.type === 'call-ended') {
+          console.log('🏁🏁🏁 CALL ENDED EVENT RECEIVED')
           setCallStatus('ended')
 
           // Save call to database after a delay to ensure ALL transcript events are processed
           // VAPI sends transcript after the call-ended event
           setTimeout(() => {
-            console.log('📞 Call ended, waiting for final transcript...')
-            console.log('📊 Current stream events count:', streamEvents.length)
-            saveCallToDatabase()
+            console.log('📞📞📞 TIMEOUT TRIGGERED - About to save call to database')
+            console.log('📊 Current stream events count:', streamEventsRef.current.length)
+            console.log('📊 Stream events ref:', streamEventsRef.current.map(e => ({ type: e.type, message: e.message.substring(0, 50) })))
+            console.log('📞 Calling saveCallToDatabase...')
+            saveCallToDatabase(streamEventsRef.current)
           }, 3000) // Increased delay to capture final transcript
 
           // Keep call data visible for review
@@ -469,6 +600,7 @@ export function Dashboard() {
           setTimeout(() => {
             setCallStatus('idle')
             setCurrentCall(null)
+            currentCallRef.current = null // Keep ref in sync
           }, 5000)
         }
       })
@@ -483,7 +615,11 @@ export function Dashboard() {
       console.log('VAPI call started with ID:', vapiCallId)
       
       // Update current call with VAPI ID
-      setCurrentCall(prev => prev ? { ...prev, vapiCallId } : null)
+      setCurrentCall(prev => {
+        const updated = prev ? { ...prev, vapiCallId } : null
+        currentCallRef.current = updated // Keep ref in sync
+        return updated
+      })
 
       // Start event polling
       const stopPollingFunction = eventHandler(vapiCallId)
@@ -503,13 +639,18 @@ export function Dashboard() {
         type: 'error',
         message: `Failed to start call: ${error instanceof Error ? error.message : 'Unknown error'}`
       }
-      setStreamEvents(prev => [...prev, errorEvent])
+      setStreamEvents(prev => {
+        const newEvents = [...prev, errorEvent]
+        streamEventsRef.current = newEvents // Keep ref in sync
+        return newEvents
+      })
       setCallStatus('failed')
       
       // Reset after error
       setTimeout(() => {
         setCallStatus('idle')
         setCurrentCall(null)
+        currentCallRef.current = null // Keep ref in sync
       }, 5000)
     }
   }

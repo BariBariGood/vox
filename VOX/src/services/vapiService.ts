@@ -48,9 +48,6 @@ export interface VAPIAssistant {
   tools?: VAPITool[]
   silenceTimeoutSeconds?: number
   responseDelaySeconds?: number
-  backchannel?: {
-    enabled: boolean
-  }
 }
 
 export interface VAPITool {
@@ -105,11 +102,8 @@ class VAPIService {
         voiceId: 'uyVNoMrnUku1dZyVEXwD' // Rachel voice ID from ElevenLabs
       },
       // Configure how the assistant handles silence and interruptions
-      silenceTimeoutSeconds: 3,
-      responseDelaySeconds: 0.5,
-      backchannel: {
-        enabled: false // Disable backchannel sounds while listening to menus
-      }
+      silenceTimeoutSeconds: 10,  // Minimum required by VAPI
+      responseDelaySeconds: 0.5
     }
 
     // Tools are causing API errors - disable for now
