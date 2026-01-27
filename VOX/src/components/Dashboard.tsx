@@ -75,6 +75,15 @@ export function Dashboard() {
           message: `${speaker}: ${content}`
         }
       case 'tool-call':
+        // Handle new format from vapiService (toolName, content)
+        if (vapiEvent.data?.content) {
+          return {
+            ...baseEvent,
+            type: 'action',
+            message: vapiEvent.data.content
+          }
+        }
+        // Handle legacy format (function.name)
         if (vapiEvent.data?.function?.name === 'gatherInformation') {
           return {
             ...baseEvent,
@@ -93,17 +102,23 @@ export function Dashboard() {
               bridgeReason: 'operator_required'
             }
           }
-        } else if (vapiEvent.data?.function?.name === 'sendDTMF') {
+        } else if (vapiEvent.data?.function?.name === 'sendDTMF' || vapiEvent.data?.function?.name === 'dtmf') {
           return {
             ...baseEvent,
             type: 'action',
-            message: `Pressed: ${vapiEvent.data.function.arguments?.digits || 'button'}`
+            message: `📞 Pressed: ${vapiEvent.data.function.arguments?.digits || vapiEvent.data.function.arguments?.digit || 'button'}`
+          }
+        } else if (vapiEvent.data?.function?.name === 'endCall') {
+          return {
+            ...baseEvent,
+            type: 'action',
+            message: '📴 Ended call'
           }
         }
         return {
           ...baseEvent,
           type: 'action',
-          message: `Tool called: ${vapiEvent.data?.function?.name || 'Unknown'}`
+          message: `Tool called: ${vapiEvent.data?.function?.name || vapiEvent.data?.toolName || 'Unknown'}`
         }
       case 'call-ended':
         return {
@@ -743,8 +758,13 @@ export function Dashboard() {
 
   return (
     <div className="min-h-screen relative bg-gray-950 overflow-hidden">
-      {/* Dynamic Background Blur Effect - Bottom positioned in main content area */}
-      <div className="w-[1000px] h-[1000px] absolute bottom-0 left-[calc(50%+128px)] transform -translate-x-1/2 translate-y-1/2 bg-gradient-to-t from-blue-900/80 via-blue-700/60 to-cyan-600/40 rounded-full blur-[200px]" />
+      {/* Dynamic Background Blur Effect - Centered */}
+      <div
+        className="w-[1200px] h-[1200px] absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-full blur-[200px] opacity-50"
+        style={{
+          background: 'radial-gradient(circle, #3659AF 0%, #E4ECFE 100%)'
+        }}
+      />
       
       {/* Sidebar Navigation */}
       <nav className="fixed left-0 top-0 h-full w-64 bg-slate-800/50 backdrop-blur-sm border-r border-slate-700/50 flex flex-col z-10">
@@ -1079,14 +1099,12 @@ export function Dashboard() {
 
             {/* Bottom Section - Call Inputs fixed to bottom */}
             {!selectedCallId && (
-              <div className="fixed bottom-0 left-64 right-0 z-20">
-                <div className="max-w-4xl mx-auto px-8 py-6">
-                  <CallInputs
-                    onStartCall={handleStartCall}
-                    onEndCall={handleEndCall}
-                    isCallActive={callStatus !== 'idle'}
-                  />
-                </div>
+              <div className="fixed bottom-0 left-64 right-0 z-20 px-2 py-6">
+                <CallInputs
+                  onStartCall={handleStartCall}
+                  onEndCall={handleEndCall}
+                  isCallActive={callStatus !== 'idle'}
+                />
               </div>
             )}
           </div>

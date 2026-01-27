@@ -21,14 +21,14 @@ export function AccountPage() {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
-  
+
   // Form state
   const [phoneNumber, setPhoneNumber] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [company, setCompany] = useState('')
   const [timezone, setTimezone] = useState('UTC')
   const [profilePictureUrl, setProfilePictureUrl] = useState<string>('')
-  
+
   // File input ref
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -41,10 +41,10 @@ export function AccountPage() {
 
   const loadProfile = async () => {
     if (!user) return
-    
+
     try {
       setLoading(true)
-      
+
       // Try to load existing profile
       const { data, error } = await supabase
         .from('user_profiles')
@@ -120,7 +120,7 @@ export function AccountPage() {
       } else {
         setProfile(data[0])
         setMessage({ type: 'success', text: 'Profile saved successfully!' })
-        
+
         // Clear message after 3 seconds
         setTimeout(() => setMessage(null), 3000)
       }
@@ -135,14 +135,14 @@ export function AccountPage() {
   const formatPhoneNumber = (value: string) => {
     // Remove all non-digit characters
     const digits = value.replace(/\D/g, '')
-    
+
     // Format as (XXX) XXX-XXXX for US numbers
     if (digits.length <= 10) {
       if (digits.length <= 3) return digits
       if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`
       return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`
     }
-    
+
     return value // Return as-is if longer than 10 digits (international)
   }
 
@@ -227,22 +227,25 @@ export function AccountPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen relative bg-gray-950 overflow-hidden">
+      {/* Dynamic Background Blur Effect - Same as Dashboard */}
+      <div className="w-[1000px] h-[1000px] absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 bg-gradient-to-t from-blue-900/80 via-blue-700/60 to-cyan-600/40 rounded-full blur-[200px]" />
+
+      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-          <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 mb-6">
+          <div className="px-6 py-4 border-b border-slate-700/50 flex justify-between items-center">
             <div className="flex items-center">
               <Link
                 to="/dashboard"
-                className="mr-4 p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                className="mr-4 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-all"
                 title="Back to Dashboard"
               >
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -250,13 +253,15 @@ export function AccountPage() {
                 </svg>
               </Link>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Account Settings</h1>
-                <p className="text-gray-600">Manage your VOX account and preferences</p>
+                <h1 className="text-2xl font-bold text-white">
+                  Account Settings
+                </h1>
+                <p className="text-white/60">Manage your VOX account and preferences</p>
               </div>
             </div>
             <button
               onClick={signOut}
-              className="text-gray-500 hover:text-gray-700 transition-colors"
+              className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all"
               title="Sign Out"
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -267,16 +272,16 @@ export function AccountPage() {
         </div>
 
         {/* Profile Form */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">Profile Information</h2>
-            <p className="text-sm text-gray-500">Update your account details and contact information</p>
+        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50">
+          <div className="px-6 py-4 border-b border-slate-700/50">
+            <h2 className="text-lg font-medium text-white">Profile Information</h2>
+            <p className="text-sm text-white/60">Update your account details and contact information</p>
           </div>
 
           <form onSubmit={saveProfile} className="px-6 py-6 space-y-6">
             {/* Profile Picture */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-white mb-2">
                 Profile Picture
               </label>
               <div className="flex items-center space-x-4">
@@ -284,7 +289,7 @@ export function AccountPage() {
                   <img
                     src={getProfilePictureUrl()}
                     alt="Profile"
-                    className="h-16 w-16 rounded-full object-cover border-2 border-gray-200"
+                    className="h-20 w-20 rounded-full object-cover border-2 border-slate-600 shadow-xl"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.src = '/src/assets/blank-profile.webp';
@@ -295,15 +300,15 @@ export function AccountPage() {
                   <div className="flex space-x-2">
                     <label
                       htmlFor="profile-picture"
-                      className={`inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium cursor-pointer transition-colors ${
+                      className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all ${
                         uploading
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : 'bg-white text-gray-700 hover:bg-gray-50'
+                          ? 'bg-white/10 text-white/40 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
                       }`}
                     >
                       {uploading ? (
                         <>
-                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
@@ -332,7 +337,7 @@ export function AccountPage() {
                         type="button"
                         onClick={handleRemoveProfilePicture}
                         disabled={uploading}
-                        className="inline-flex items-center px-3 py-2 border border-red-300 rounded-lg text-sm font-medium text-red-700 bg-white hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="inline-flex items-center px-4 py-2 border border-red-500/50 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                       >
                         <svg className="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -341,7 +346,7 @@ export function AccountPage() {
                       </button>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-white/40 mt-2">
                     JPG, PNG, WebP or GIF. Max size 5MB.
                   </p>
                 </div>
@@ -350,21 +355,21 @@ export function AccountPage() {
 
             {/* Email (read-only) */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-white mb-2">
                 Email Address
               </label>
               <input
                 type="email"
                 value={user?.email || ''}
                 disabled
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                className="w-full px-4 py-3 bg-white/5 border border-slate-600 rounded-lg text-white/50 cursor-not-allowed"
               />
-              <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+              <p className="text-xs text-white/40 mt-1">Email cannot be changed</p>
             </div>
 
             {/* Display Name */}
             <div>
-              <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="displayName" className="block text-sm font-medium text-white mb-2">
                 Display Name
               </label>
               <input
@@ -372,14 +377,14 @@ export function AccountPage() {
                 id="displayName"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-3 bg-white/10 border border-slate-600 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
                 placeholder="Your preferred name"
               />
             </div>
 
             {/* Phone Number */}
             <div>
-              <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="phoneNumber" className="block text-sm font-medium text-white mb-2">
                 Phone Number
               </label>
               <input
@@ -387,17 +392,17 @@ export function AccountPage() {
                 id="phoneNumber"
                 value={phoneNumber}
                 onChange={handlePhoneChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-3 bg-white/10 border border-slate-600 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
                 placeholder="(555) 123-4567 or +1234567890"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-white/40 mt-1">
                 Used for callback numbers and call identification. International format (+country code) supported.
               </p>
             </div>
 
             {/* Company */}
             <div>
-              <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="company" className="block text-sm font-medium text-white mb-2">
                 Company (Optional)
               </label>
               <input
@@ -405,39 +410,39 @@ export function AccountPage() {
                 id="company"
                 value={company}
                 onChange={(e) => setCompany(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-3 bg-white/10 border border-slate-600 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
                 placeholder="Your company name"
               />
             </div>
 
             {/* Timezone */}
             <div>
-              <label htmlFor="timezone" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="timezone" className="block text-sm font-medium text-white mb-2">
                 Timezone
               </label>
               <select
                 id="timezone"
                 value={timezone}
                 onChange={(e) => setTimezone(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-3 bg-white/10 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none appearance-none cursor-pointer"
               >
-                <option value="UTC">UTC</option>
-                <option value="America/New_York">Eastern Time</option>
-                <option value="America/Chicago">Central Time</option>
-                <option value="America/Denver">Mountain Time</option>
-                <option value="America/Los_Angeles">Pacific Time</option>
-                <option value="Europe/London">London</option>
-                <option value="Europe/Paris">Paris</option>
-                <option value="Asia/Tokyo">Tokyo</option>
+                <option value="UTC" className="bg-gray-900">UTC</option>
+                <option value="America/New_York" className="bg-gray-900">Eastern Time</option>
+                <option value="America/Chicago" className="bg-gray-900">Central Time</option>
+                <option value="America/Denver" className="bg-gray-900">Mountain Time</option>
+                <option value="America/Los_Angeles" className="bg-gray-900">Pacific Time</option>
+                <option value="Europe/London" className="bg-gray-900">London</option>
+                <option value="Europe/Paris" className="bg-gray-900">Paris</option>
+                <option value="Asia/Tokyo" className="bg-gray-900">Tokyo</option>
               </select>
             </div>
 
             {/* Message */}
             {message && (
               <div className={`p-3 rounded-lg ${
-                message.type === 'success' 
-                  ? 'bg-green-50 text-green-800 border border-green-200' 
-                  : 'bg-red-50 text-red-800 border border-red-200'
+                message.type === 'success'
+                  ? 'bg-green-500/10 text-green-400 border border-green-500/50'
+                  : 'bg-red-500/10 text-red-400 border border-red-500/50'
               }`}>
                 {message.text}
               </div>
@@ -448,46 +453,62 @@ export function AccountPage() {
               <button
                 type="submit"
                 disabled={saving}
-                className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+                className={`px-6 py-3 rounded-lg font-medium transition-all ${
                   saving
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    ? 'bg-white/10 text-white/40 cursor-not-allowed'
                     : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
               >
-                {saving ? 'Saving...' : 'Save Profile'}
+                {saving ? (
+                  <div className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Saving...
+                  </div>
+                ) : 'Save Profile'}
               </button>
             </div>
           </form>
         </div>
 
         {/* Account Stats */}
-        <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">Account Information</h2>
+        <div className="mt-6 bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50">
+          <div className="px-6 py-4 border-b border-slate-700/50">
+            <h2 className="text-lg font-medium text-white">Account Information</h2>
           </div>
           <div className="px-6 py-4 space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Account Created:</span>
-              <span className="text-gray-900">
+              <span className="text-white/60">Account Created:</span>
+              <span className="text-white">
                 {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'}
               </span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">User ID:</span>
-              <span className="text-gray-900 font-mono text-xs">{user?.id}</span>
+              <span className="text-white/60">User ID:</span>
+              <span className="text-white font-mono text-xs bg-white/10 px-2 py-1 rounded">
+                {user?.id}
+              </span>
             </div>
             {profile && (
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Profile Updated:</span>
-                <span className="text-gray-900">
+                <span className="text-white/60">Profile Updated:</span>
+                <span className="text-white">
                   {new Date(profile.updated_at).toLocaleDateString()}
                 </span>
               </div>
             )}
           </div>
         </div>
+
+        {/* Footer */}
+        <div className="text-center mt-8">
+          <p className="text-white/40 text-sm">
+            Need help? Contact support at support@vox.ai
+          </p>
+        </div>
       </div>
     </div>
   )
 }
-
