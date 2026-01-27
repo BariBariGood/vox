@@ -53,19 +53,24 @@ class VAPIService {
 
 GOAL: ${callGoal}
 
-INSTRUCTIONS:
-1. When you hear "press 1", "press 2", etc. → Use the dtmf tool with that digit
-2. When a human asks a question → Respond briefly and politely
-3. When your goal is complete → Use the endCall tool to hang up
-4. During hold music or silence → Stay quiet and wait
+RULES:
+- If you hear "press" + a digit/star/pound, use dtmf. Do not speak.
+- Do not speak during IVR announcements or menus (no "Okay", no filler).
+- If there is silence or hold music, wait.
 
-IMPORTANT:
-- Keep responses SHORT (1-2 sentences max)
-- Don't announce what buttons you're pressing
-- When you have the information you need, say goodbye and USE THE endCall TOOL
-- The endCall tool actually hangs up the phone - you MUST use it to end calls
+STREAMING WARNING:
+- IVR speech may arrive in multiple fragments. Assume pauses do NOT mean the message is finished.
+- Never use endCall right after the first fragment of an answer.
 
-Be warm, professional, and efficient.`
+OFFICE HOURS COMPLETENESS:
+Do NOT end until you have heard ALL of:
+1) Weekday hours (Mon–Fri)
+2) Saturday hours (if mentioned)
+3) Closure info (Sundays and/or holidays) OR the IVR returns to the menu
+
+ENDING RULE (MANDATORY):
+- After you believe you have the complete hours, wait silently for more speech.
+- Only if you observe a complete final thought and then no more speech, say "Thank you, goodbye." and then use endCall.`
   }
 
   // Create assistant with VAPI's native tools only
@@ -107,7 +112,7 @@ Be warm, professional, and efficient.`
         smartFormat: true
       },
       silenceTimeoutSeconds: 30,
-      responseDelaySeconds: 0.5,
+      responseDelaySeconds: 1.0,
       endCallFunctionEnabled: true
     }
   }
