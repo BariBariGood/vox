@@ -23,7 +23,19 @@ export interface VAPICallConfig {
 export interface VAPICallEvent {
   type: 'call-started' | 'speech-started' | 'speech-ended' | 'transcript' | 'tool-call' | 'call-ended' | 'call-status' | 'error'
   timestamp: Date
-  data?: unknown
+  data?: {
+    speaker?: string
+    role?: string
+    content?: string
+    text?: string
+    function?: {
+      name?: string
+      arguments?: Record<string, unknown>
+    }
+    toolName?: string
+    status?: string
+    error?: string
+  }
 }
 
 export interface CallContext {

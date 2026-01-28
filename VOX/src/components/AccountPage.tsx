@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
+import blankProfile from '../assets/blank-profile.webp'
 
 interface UserProfile {
   id: string
@@ -222,7 +223,7 @@ export function AccountPage() {
   }
 
   const getProfilePictureUrl = () => {
-    return profilePictureUrl || '/src/assets/blank-profile.webp'
+    return profilePictureUrl || blankProfile
   }
 
   if (loading) {
@@ -292,7 +293,7 @@ export function AccountPage() {
                     className="h-20 w-20 rounded-full object-cover border-2 border-slate-600 shadow-xl"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      target.src = '/src/assets/blank-profile.webp';
+                      target.src = blankProfile;
                     }}
                   />
                 </div>

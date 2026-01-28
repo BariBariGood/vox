@@ -5,6 +5,8 @@ import { CallInputs } from './CallInputs'
 import { StatusBadge } from './StatusBadge'
 import { vapiService, type VAPICallEvent } from '../services/vapiService'
 import { supabase } from '../lib/supabase'
+import voxLogo from '../assets/vox-logo.svg'
+import blankProfile from '../assets/blank-profile.webp'
 
 // Define StreamEvent type locally since LiveStream is not imported in the new UI
 export interface StreamEvent {
@@ -772,7 +774,7 @@ export function Dashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <div className="h-8 w-8 flex items-center justify-center">
-                <img src="/src/assets/vox-logo.svg" alt="VOX Logo" className="h-8 w-8" />
+                <img src={voxLogo} alt="VOX Logo" className="h-8 w-8" />
               </div>
               <h1 className="ml-3 text-xl font-semibold text-white">VOX</h1>
             </div>
@@ -880,12 +882,12 @@ export function Dashboard() {
               title="Account Settings"
             >
               <img
-                src={userProfile?.profile_picture_url || '/src/assets/blank-profile.webp'}
+                src={userProfile?.profile_picture_url || blankProfile}
                 alt="Profile"
                 className="h-5 w-5 rounded-full object-cover"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  target.src = '/src/assets/blank-profile.webp';
+                  target.src = blankProfile;
                 }}
               />
             </Link>

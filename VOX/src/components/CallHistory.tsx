@@ -7,6 +7,7 @@ interface CallRecord {
   call_status: string
   transcript: Array<{
     timestamp: Date
+    speaker?: string
     message: string
   }>
   call_summary?: string

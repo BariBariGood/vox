@@ -1,3 +1,6 @@
+import voxLogo from '../assets/vox-logo.svg'
+import pitchImage from '../assets/pitch - 3.png'
+
 export function LandingPage() {
   return (
     <div className="min-h-screen bg-gray-950 text-white">
@@ -10,7 +13,7 @@ export function LandingPage() {
         {/* Hero Content */}
         <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">
           <div className="flex items-center justify-center mb-8">
-            <img src="/src/assets/vox-logo.svg" alt="VOX Logo" className="h-16 w-16 mr-5" />
+            <img src={voxLogo} alt="VOX Logo" className="h-16 w-16 mr-5" />
             <h1 className="text-6xl font-light tracking-wide">Vox</h1>
           </div>
           <p className="text-2xl font-light text-white/70 mb-12">
@@ -20,7 +23,7 @@ export function LandingPage() {
           {/* Hero Image */}
           <div className="mt-8 mb-16 rounded-2xl overflow-hidden shadow-2xl shadow-blue-500/10 border border-white/10">
             <img 
-              src="/src/assets/pitch - 3.png" 
+              src={pitchImage} 
               alt="VOX Interface Preview" 
               className="w-full max-w-3xl mx-auto"
             />
@@ -177,7 +180,7 @@ export function LandingPage() {
       <footer className="py-12 px-6 border-t border-white/10">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center">
-            <img src="/src/assets/vox-logo.svg" alt="VOX Logo" className="h-8 w-8 mr-3 opacity-60" />
+            <img src={voxLogo} alt="VOX Logo" className="h-8 w-8 mr-3 opacity-60" />
             <span className="text-white/40 text-sm">VOX — Your personal phone secretary</span>
           </div>
           <span className="text-white/30 text-sm">MVP Preview</span>

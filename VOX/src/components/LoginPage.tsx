@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
+import voxLogo from '../assets/vox-logo.svg'
 
 export function LoginPage() {
   const [name, setName] = useState('')
@@ -104,7 +105,7 @@ export function LoginPage() {
         {/* VOX Logo and Branding */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center mb-6">
-            <img src="/src/assets/vox-logo.svg" alt="VOX Logo" className="h-12 w-12 mr-4" />
+            <img src={voxLogo} alt="VOX Logo" className="h-12 w-12 mr-4" />
             <h1 className="text-4xl font-light text-white tracking-wide">Vox</h1>
           </div>
           <h2 className="text-xl font-light text-white/80">Let's get you set up.</h2>

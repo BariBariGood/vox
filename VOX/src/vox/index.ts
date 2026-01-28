@@ -1,8 +1,4 @@
-// VOX Module - Clean voice agent architecture
-// Model decides → Code executes
+// VOX Module - Type definitions for voice agent
 
 export * from './types'
-export * from './tools'
-export * from './prompt'
-export * from './executor'
 
